@@ -21,10 +21,10 @@ export default function Invitation() {
   const [playing, setPlaying] = useState(false);
   const { theme } = useSettings();
   const themeRef = useRef(theme);
-  themeRef.current = theme;
 
   // Admin-chosen colours: CSS tokens for the page, material colours for the scene.
   useEffect(() => {
+    themeRef.current = theme;
     applyTheme(theme);
     handleRef.current?.setTheme(theme.gold, theme.rose);
   }, [theme]);

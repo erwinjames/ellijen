@@ -9,6 +9,7 @@ Next.js 16 · Three.js + GSAP public site · Firebase (Firestore + Auth) · Tail
 | `/`            | Invitation: 3D envelope → tap to open → music → full site (story, countdown, details, program, entourage, dress code, gallery, FAQ, gifts, travel, RSVP) |
 | `/admin/login` | Email/password sign-in (Firebase Auth)                               |
 | `/admin`       | Live RSVP list, yes/no/headcount stats, search, CSV export, delete   |
+| `/admin/settings` | Theme colours (accent, highlight, background) and dress code (title, note, palette); applied live to the public site |
 
 ## Setup
 
@@ -50,6 +51,7 @@ Next.js 16 · Three.js + GSAP public site · Firebase (Firestore + Auth) · Tail
 ## Customise
 
 - Names, date, venue, RSVP deadline, hashtag, max guests: [`lib/wedding.ts`](lib/wedding.ts).
+- Theme colours and dress code: admin → Site settings (stored in Firestore `settings/site`; the values in `wedding.ts` are the defaults).
 - All content (names, date, venue, story chapters, program, entourage, dress code & palette, gallery paths, FAQ, gifts, travel): [`lib/wedding.ts`](lib/wedding.ts). Section layout: [`app/page.tsx`](app/page.tsx).
 - 3D state per section: `CHAPTERS` in [`components/scene/WeddingScene.ts`](components/scene/WeddingScene.ts), keyed by each section's `data-chapter`.
 - Envelope / letter card look: [`components/scene/envelope.ts`](components/scene/envelope.ts). Music-box tune: [`lib/music.ts`](lib/music.ts).
