@@ -1,69 +1,425 @@
-import Image from "next/image";
+import Countdown from "@/components/Countdown";
+import Invitation from "@/components/Invitation";
+import Photo from "@/components/Photo";
+import Reveal from "@/components/Reveal";
+import RsvpForm from "@/components/RsvpForm";
+import { wedding } from "@/lib/wedding";
+
+const time = new Date(wedding.date).toLocaleTimeString("en-US", {
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: "Asia/Manila",
+});
+const deadline = new Date(wedding.rsvpDeadline).toLocaleDateString("en-US", {
+  month: "long",
+  day: "numeric",
+});
+const initials = (name: string) =>
+  name
+    .replace(/^(Mr\.|Mrs\.|Ms\.)\s*/g, "")
+    .split(/\s+|&/)
+    .filter((w) => w && /^[A-Z]/.test(w))
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("");
+
+function Title({
+  eyebrow,
+  children,
+}: {
+  eyebrow: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <p
+        data-reveal
+        className="text-xs uppercase tracking-[0.5em] text-gold/80"
+      >
+        {eyebrow}
+      </p>
+      <h2
+        data-reveal
+        className="mt-4 font-serif text-5xl font-light sm:text-6xl"
+      >
+        {children}
+      </h2>
+    </>
+  );
+}
+
+const card = "rounded-3xl border border-cream/10 bg-ink-2/85 backdrop-blur";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <>
+      <Invitation />
+
+      {/* body is a flex column: without a block wrapper, mx-auto sections shrink-wrap to their content */}
+      <main className="w-full">
+        {/* ---- Our story: one chapter per scroll, photo on alternating sides ---- */}
+        <section
+          id="story"
+          className="mx-auto max-w-6xl scroll-mt-16 px-6 pt-32"
+        >
+          <Reveal className="text-center">
+            <Title eyebrow="Our story">Two rings, one promise</Title>
+          </Reveal>
+          {wedding.story.map((c, i) => (
+            <div key={c.key} data-chapter={c.key}>
+              <Reveal className="relative grid min-h-[80vh] items-center gap-10 py-16 sm:grid-cols-2 sm:gap-16">
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -top-4 left-0 select-none font-serif text-[10rem] leading-none text-gold/5 sm:text-[16rem]"
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div
+                  data-reveal={i % 2 ? "right" : "left"}
+                  className={`aspect-[4/5] ${i % 2 ? "sm:order-2" : ""}`}
+                >
+                  <Photo
+                    src={c.image}
+                    alt={c.title}
+                    parallax
+                    className="h-full shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)]"
+                  />
+                </div>
+                <div
+                  className={`relative [text-shadow:0_2px_24px_rgba(0,0,0,0.9)] ${i % 2 ? "sm:order-1 sm:text-right" : ""}`}
+                >
+                  <p
+                    data-reveal="pop"
+                    className="font-serif text-6xl text-gold/70"
+                  >
+                    {c.year}
+                  </p>
+                  <h3
+                    data-reveal
+                    className="mt-3 font-serif text-4xl sm:text-5xl"
+                  >
+                    {c.title}
+                  </h3>
+                  <p
+                    data-reveal
+                    className="mt-5 max-w-md font-serif text-xl leading-relaxed text-cream/75 sm:ml-auto sm:mr-0"
+                  >
+                    {c.text}
+                  </p>
+                </div>
+              </Reveal>
+            </div>
+          ))}
+        </section>
+
+        {/* ---- Countdown ---- */}
+        <div data-chapter="countdown">
+          <Reveal className="mx-auto max-w-3xl px-6 py-24 text-center">
+            <p
+              data-reveal
+              className="mb-8 text-xs uppercase tracking-[0.5em] text-gold/80"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
+              Counting down
+            </p>
+            <Countdown />
+          </Reveal>
+        </div>
+
+        {/* ---- Details + program ---- */}
+        <section
+          id="details"
+          data-chapter="details"
+          className="mx-auto max-w-5xl scroll-mt-16 px-6 py-24"
+        >
+          <Reveal className="text-center">
+            <Title eyebrow="The day">When &amp; where</Title>
+          </Reveal>
+          <Reveal className="mt-14 grid gap-6 sm:grid-cols-3">
+            {[
+              ["Ceremony", time, wedding.venue.name],
+              ["Reception", "To follow", wedding.venue.name],
+              [
+                "Dress code",
+                wedding.dressCode.title.split(" ")[0],
+                "See palette below",
+              ],
+            ].map(([title, a, b]) => (
+              <div
+                key={title}
+                data-reveal="flip"
+                className={`${card} p-8 text-center`}
+              >
+                <p className="text-xs uppercase tracking-[0.4em] text-gold/80">
+                  {title}
+                </p>
+                <p className="mt-4 font-serif text-3xl">{a}</p>
+                <p className="mt-2 text-cream/60">{b}</p>
+              </div>
+            ))}
             <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              data-reveal
+              href={wedding.venue.mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-center text-sm uppercase tracking-[0.3em] text-gold underline-offset-8 hover:underline sm:col-span-3"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              {wedding.venue.address} · open in maps
+            </a>
+          </Reveal>
+
+          <div data-chapter="program">
+            <Reveal className="mx-auto mt-24 max-w-2xl">
+              <p
+                data-reveal
+                className="text-center text-xs uppercase tracking-[0.5em] text-gold/80"
+              >
+                Order of the day
+              </p>
+              <ol className="mt-10 border-l border-gold/30 pl-8">
+                {wedding.program.map((p) => (
+                  <li
+                    key={p.time}
+                    data-reveal="left"
+                    className="relative pb-10 last:pb-0"
+                  >
+                    <span className="absolute -left-[2.55rem] top-1.5 size-3 rounded-full bg-gold shadow-[0_0_14px_3px_rgba(232,192,105,0.5)]" />
+                    <p className="font-serif text-2xl text-gold">{p.time}</p>
+                    <p className="mt-1 font-serif text-2xl">{p.title}</p>
+                    <p className="mt-1 text-cream/60">{p.note}</p>
+                  </li>
+                ))}
+              </ol>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ---- Entourage ---- */}
+        <section
+          id="entourage"
+          data-chapter="entourage"
+          className="mx-auto max-w-6xl scroll-mt-16 px-6 py-24"
+        >
+          <Reveal className="text-center">
+            <Title eyebrow="Entourage">The people beside us</Title>
+            <p
+              data-reveal
+              className="mx-auto mt-5 max-w-xl font-serif text-xl text-cream/70"
+            >
+              Family and friends who have carried us here, and will walk with us
+              down the aisle.
+            </p>
+          </Reveal>
+          <div className="mt-16 grid gap-6 sm:grid-cols-2">
+            {wedding.entourage.map((g) => (
+              <Reveal
+                key={g.role}
+                className={`${card} p-7 ${g.people.length > 2 ? "sm:col-span-2" : ""}`}
+              >
+                <p
+                  data-reveal
+                  className="text-center text-xs uppercase tracking-[0.4em] text-gold/80"
+                >
+                  {g.role}
+                </p>
+                <ul
+                  className={`mt-6 flex flex-wrap justify-center gap-x-10 gap-y-7`}
+                >
+                  {g.people.map((p) => (
+                    <li
+                      key={p.name}
+                      data-reveal="pop"
+                      className="flex w-36 flex-col items-center text-center"
+                    >
+                      {p.image ? (
+                        <Photo
+                          src={p.image}
+                          alt={p.name}
+                          label=""
+                          rounded="rounded-full"
+                          className="size-24"
+                        />
+                      ) : (
+                        <span className="flex size-24 items-center justify-center rounded-full border border-gold/50 bg-gradient-to-br from-ink-2 to-ink font-serif text-3xl italic text-gold">
+                          {initials(p.name)}
+                        </span>
+                      )}
+                      <p className="mt-3 font-serif text-lg leading-tight">
+                        {p.name}
+                      </p>
+                      {p.note && (
+                        <p className="mt-1 text-xs uppercase tracking-[0.3em] text-cream/50">
+                          {p.note}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
+        {/* ---- Dress code ---- */}
+        <section
+          data-chapter="palette"
+          className="mx-auto max-w-4xl px-6 py-24 text-center"
+        >
+          <Reveal>
+            <Title eyebrow="Dress code">{wedding.dressCode.title}</Title>
+            <p
+              data-reveal
+              className="mx-auto mt-5 max-w-xl font-serif text-xl text-cream/70"
+            >
+              {wedding.dressCode.note}
+            </p>
+            <div className="mt-12 flex flex-wrap justify-center gap-6">
+              {wedding.dressCode.palette.map(([name, hex]) => (
+                <div
+                  key={hex}
+                  data-reveal="pop"
+                  className="flex flex-col items-center gap-3"
+                >
+                  <span
+                    className="size-20 rounded-full border border-cream/20 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)]"
+                    style={{ background: hex }}
+                  />
+                  <span className="text-xs uppercase tracking-[0.3em] text-cream/60">
+                    {name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+        </section>
+
+        {/* ---- Gallery ---- */}
+        <section
+          id="gallery"
+          data-chapter="gallery"
+          className="mx-auto max-w-6xl scroll-mt-16 px-6 py-24"
+        >
+          <Reveal className="text-center">
+            <Title eyebrow="Gallery">Moments so far</Title>
+          </Reveal>
+          <Reveal className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {wedding.gallery.map((src, i) => (
+              <div
+                key={src}
+                data-reveal="pop"
+                className={
+                  i % 3 === 1 ? "aspect-[3/4]" : "aspect-[4/5] sm:translate-y-8"
+                }
+              >
+                <Photo
+                  src={src}
+                  alt={`Gallery photo ${i + 1}`}
+                  label=""
+                  parallax
+                  className="h-full"
+                />
+              </div>
+            ))}
+          </Reveal>
+        </section>
+
+        {/* ---- FAQ ---- */}
+        <section
+          id="faq"
+          data-chapter="faq"
+          className="mx-auto max-w-3xl scroll-mt-16 px-6 py-24"
+        >
+          <Reveal className="text-center">
+            <Title eyebrow="Good to know">Questions &amp; answers</Title>
+          </Reveal>
+          <Reveal className="mt-12 space-y-3">
+            {wedding.faq.map((f) => (
+              <details
+                key={f.q}
+                data-reveal
+                className={`group ${card} px-6 py-5 open:border-gold/40`}
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-serif text-2xl marker:hidden">
+                  {f.q}
+                  <span className="text-gold transition group-open:rotate-45">
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 leading-relaxed text-cream/70">{f.a}</p>
+              </details>
+            ))}
+          </Reveal>
+        </section>
+
+        {/* ---- Gifts + travel ---- */}
+        <section
+          data-chapter="travel"
+          className="mx-auto grid max-w-5xl gap-8 px-6 py-24 md:grid-cols-2"
+        >
+          <Reveal className={`${card} p-10 text-center`}>
+            <Title eyebrow="Gifts">With love</Title>
+            <p
+              data-reveal
+              className="mt-5 font-serif text-xl leading-relaxed text-cream/70"
+            >
+              {wedding.gifts.note}
+            </p>
+            {wedding.gifts.registryUrl && (
+              <a
+                data-reveal
+                href={wedding.gifts.registryUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-8 inline-block rounded-full border border-gold/60 px-8 py-3 text-sm uppercase tracking-[0.3em] text-gold transition hover:bg-gold hover:text-ink"
+              >
+                View registry
+              </a>
+            )}
+          </Reveal>
+          <Reveal className={`${card} p-10`}>
+            <Title eyebrow="Travel & stay">Getting there</Title>
+            <p
+              data-reveal
+              className="mt-5 font-serif text-xl leading-relaxed text-cream/70"
+            >
+              {wedding.travel.note}
+            </p>
+            <ul className="mt-8 space-y-4">
+              {wedding.travel.stays.map((h) => (
+                <li key={h.name} data-reveal="left">
+                  <a
+                    href={h.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-serif text-2xl text-gold underline-offset-6 hover:underline"
+                  >
+                    {h.name}
+                  </a>
+                  <p className="text-sm text-cream/60">{h.note}</p>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+        </section>
+
+        {/* ---- RSVP ---- */}
+        <div data-chapter="rsvp">
+          <Reveal className="mx-auto max-w-xl px-6 py-24">
+            <div id="rsvp" className="scroll-mt-24 text-center">
+              <Title eyebrow="RSVP">Will you join us?</Title>
+              <p data-reveal className="mt-4 mb-10 text-cream/60">
+                Kindly reply by {deadline}.
+              </p>
+            </div>
+            <div data-reveal="pop">
+              <RsvpForm />
+            </div>
+          </Reveal>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        <footer className="py-16 text-center font-serif text-lg italic text-cream/40">
+          {wedding.hashtag} · {wedding.couple.a} &amp; {wedding.couple.b}
+        </footer>
       </main>
-    </div>
+    </>
   );
 }
