@@ -18,6 +18,8 @@ export type SceneHandle = {
   setChapter(name: string): void;
   /** Play the envelope-opening sequence. No-op after the first call. */
   open(): void;
+  /** Recolour the gold (rings, sparkles, warm accent) and rose (fill light, sparkles) from admin settings. */
+  setTheme(gold: string, rose: string): void;
   dispose(): void;
 };
 
@@ -413,6 +415,16 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts = {}): 
 
   return {
     setChapter: (name) => void (chapter = CHAPTERS[name] ?? chapter),
+    setTheme(goldHex, roseHex) {
+      const g = new THREE.Color(goldHex);
+      const r = new THREE.Color(roseHex);
+      for (const m of ringMats) m.color.copy(g);
+      pMat.uniforms.uColorA.value.copy(g).lerp(new THREE.Color(0xffffff), 0.25);
+      pMat.uniforms.uColorB.value.copy(r);
+      fill.color.copy(r);
+      rim.color.copy(g);
+      accentWarm.copy(g).multiplyScalar(0.45);
+    },
     open,
     dispose() {
       renderer.setAnimationLoop(null);

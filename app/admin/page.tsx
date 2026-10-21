@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
@@ -68,6 +69,9 @@ export default function Admin() {
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="font-serif text-4xl">RSVPs</h1>
         <div className="flex items-center gap-4 text-sm text-cream/60">
+          <Link href="/admin/settings" className="rounded-full border border-gold/60 px-4 py-1.5 text-gold hover:bg-gold hover:text-ink">
+            Site settings
+          </Link>
           <span>{user.email}</span>
           <button onClick={() => signOut(auth())} className="rounded-full border border-cream/20 px-4 py-1.5 hover:border-gold">
             Sign out

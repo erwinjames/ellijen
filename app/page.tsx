@@ -1,4 +1,5 @@
 import Countdown from "@/components/Countdown";
+import DressCode from "@/components/DressCode";
 import Invitation from "@/components/Invitation";
 import Photo from "@/components/Photo";
 import Reveal from "@/components/Reveal";
@@ -259,40 +260,14 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ---- Dress code ---- */}
-        <section
-          data-chapter="palette"
-          className="mx-auto max-w-4xl px-6 py-24 text-center"
-        >
-          <Reveal>
-            <Title eyebrow="Dress code">{wedding.dressCode.title}</Title>
-            <p
-              data-reveal
-              className="mx-auto mt-5 max-w-xl font-serif text-xl text-cream/70"
-            >
-              {wedding.dressCode.note}
-            </p>
-            <div className="mt-12 flex flex-wrap justify-center gap-6">
-              {wedding.dressCode.palette.map(([name, hex]) => (
-                <div
-                  key={hex}
-                  data-reveal="pop"
-                  className="flex flex-col items-center gap-3"
-                >
-                  <span
-                    className="size-20 rounded-full border border-cream/20 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)]"
-                    style={{ background: hex }}
-                  />
-                  <span className="text-xs uppercase tracking-[0.3em] text-cream/60">
-                    {name}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        </section>
+        {/* ---- Dress code (editable in admin → Settings) ---- */}
+      <section data-chapter="palette" className="mx-auto max-w-4xl px-6 py-24 text-center">
+        <Reveal>
+          <DressCode />
+        </Reveal>
+      </section>
 
-        {/* ---- Gallery ---- */}
+      {/* ---- Gallery ---- */}
         <section
           id="gallery"
           data-chapter="gallery"

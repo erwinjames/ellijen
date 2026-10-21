@@ -5,6 +5,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import type { SceneHandle } from "./scene/WeddingScene";
 import { createPlayer, type Player } from "@/lib/music";
+import { applyTheme, useSettings } from "@/lib/settings";
 import { wedding } from "@/lib/wedding";
 import Hero from "./Hero";
 import Nav from "./Nav";
@@ -18,6 +19,15 @@ export default function Invitation() {
   const [ready, setReady] = useState(false);
   const [opened, setOpened] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const { theme } = useSettings();
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
+
+  // Admin-chosen colours: CSS tokens for the page, material colours for the scene.
+  useEffect(() => {
+    applyTheme(theme);
+    handleRef.current?.setTheme(theme.gold, theme.rose);
+  }, [theme]);
 
   useEffect(() => {
     let triggers: ScrollTrigger[] = [];
@@ -33,6 +43,7 @@ export default function Invitation() {
           onOpenStart: () => playerRef.current?.play(),
           onOpened: () => setOpened(true),
         });
+        handleRef.current.setTheme(themeRef.current.gold, themeRef.current.rose);
         // Whichever [data-chapter] section straddles the viewport centre drives the 3D scene.
         triggers = Array.from(document.querySelectorAll<HTMLElement>("[data-chapter]")).map((el) =>
           ScrollTrigger.create({
