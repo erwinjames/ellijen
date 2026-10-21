@@ -31,7 +31,7 @@ export default function Countdown() {
       {parts(now ?? target).map(([label, n]) => (
         <div key={label} data-reveal="pop" className="rounded-2xl border border-cream/10 bg-ink-2/60 px-2 py-5 backdrop-blur">
           <div className="font-serif text-4xl text-gold tabular-nums sm:text-6xl">{now === null ? "–" : n}</div>
-          <div className="mt-1 text-[10px] uppercase tracking-[0.3em] text-cream/60 sm:text-xs">{label}</div>
+          <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-cream/60 sm:text-xs sm:tracking-[0.3em]">{label}</div>
         </div>
       ))}
     </div>

@@ -43,6 +43,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts = {}): 
   // --- renderer / scene / camera ---------------------------------------------------
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, mobile ? 1.5 : 2));
+  renderer.setClearColor(0x0a0612); // matches the fog, so any gap past the backdrop on tall screens is invisible
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
   renderer.shadowMap.enabled = true;
@@ -52,7 +53,8 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts = {}): 
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x0a0612, 0.045);
 
-  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+  const FOV = 42;
+  const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
   // Intro camera sits close to the envelope; the story timeline drives `story` afterwards.
   const cam = { x: 0, y: 0.15, z: 4.4, lookY: 0 };
   camera.position.set(cam.x, cam.y, cam.z);
@@ -318,6 +320,8 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts = {}): 
     const w = window.innerWidth;
     const h = window.innerHeight;
     camera.aspect = w / h;
+    // Portrait: hold the horizontal field of view instead, so the envelope and rings stay fully in frame on phones.
+    camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(FOV / 2)) / Math.min(1, camera.aspect)));
     camera.updateProjectionMatrix();
     renderer.setSize(w, h, false);
     composer.setSize(w, h);

@@ -57,7 +57,7 @@ export default function Home() {
       <Invitation />
 
       {/* body is a flex column: without a block wrapper, mx-auto sections shrink-wrap to their content */}
-      <main className="w-full">
+      <main className="w-full overflow-x-clip">
         {/* ---- Our story: one chapter per scroll, photo on alternating sides ---- */}
         <section
           id="story"
@@ -223,13 +223,13 @@ export default function Home() {
                   {g.role}
                 </p>
                 <ul
-                  className={`mt-6 flex flex-wrap justify-center gap-x-10 gap-y-7`}
+                  className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-7 sm:gap-x-10"
                 >
                   {g.people.map((p) => (
                     <li
                       key={p.name}
                       data-reveal="pop"
-                      className="flex w-36 flex-col items-center text-center"
+                      className="flex w-32 flex-col items-center text-center sm:w-36"
                     >
                       {p.image ? (
                         <Photo
@@ -330,7 +330,7 @@ export default function Home() {
           data-chapter="travel"
           className="mx-auto grid max-w-5xl gap-8 px-6 py-24 md:grid-cols-2"
         >
-          <Reveal className={`${card} p-10 text-center`}>
+          <Reveal className={`${card} p-6 text-center sm:p-10`}>
             <Title eyebrow="Gifts">With love</Title>
             <p
               data-reveal
@@ -350,7 +350,7 @@ export default function Home() {
               </a>
             )}
           </Reveal>
-          <Reveal className={`${card} p-10`}>
+          <Reveal className={`${card} p-6 sm:p-10`}>
             <Title eyebrow="Travel & stay">Getting there</Title>
             <p
               data-reveal

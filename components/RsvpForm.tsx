@@ -53,7 +53,7 @@ export default function RsvpForm() {
 
   return (
     <form ref={formRef} onSubmit={onSubmit} className="space-y-6 rounded-3xl border border-cream/10 bg-ink-2/85 p-6 backdrop-blur sm:p-10">
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <button type="button" className={pill(true)} onClick={() => setAttending(true)} aria-pressed={attending === true}>
           Joyfully accepts
         </button>

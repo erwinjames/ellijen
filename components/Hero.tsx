@@ -17,7 +17,8 @@ export default function Hero({ opened, onOpen }: { opened: boolean; onOpen: () =
   useEffect(() => {
     const ctx = gsap.context(() => {
       if (!opened) {
-        gsap.from(".hero-prompt", { opacity: 0, y: 20, duration: 1.2, delay: 0.8, ease: "power3.out" });
+        // fromTo, not from: a reverted from() tween (StrictMode re-runs the effect) can record the hidden state as its end state.
+        gsap.fromTo(".hero-prompt", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1.2, delay: 0.8, ease: "power3.out" });
         gsap.to(".hero-prompt span", { opacity: 0.4, repeat: -1, yoyo: true, duration: 1.1, ease: "sine.inOut" });
         return;
       }
@@ -33,17 +34,20 @@ export default function Hero({ opened, onOpen }: { opened: boolean; onOpen: () =
     return () => ctx.revert();
   }, [opened]);
 
-  const chars = (s: string) =>
-    s.split("").map((c, i) => (
-      <span key={i} className="hero-char inline-block">
-        {c}
-      </span>
-    ));
+  const chars = (s: string) => (
+    <span className="inline-block whitespace-nowrap">
+      {s.split("").map((c, i) => (
+        <span key={i} className="hero-char inline-block">
+          {c}
+        </span>
+      ))}
+    </span>
+  );
 
   return (
     <section ref={ref} id="top" data-chapter="hero" className="relative flex min-h-dvh flex-col items-center justify-center px-4 text-center">
       {!opened ? (
-        <button onClick={onOpen} className="hero-prompt absolute bottom-[14%] rounded-full border border-gold/50 px-8 py-3 text-xs uppercase tracking-[0.4em] text-gold transition hover:bg-gold/10">
+        <button onClick={onOpen} className="hero-prompt absolute bottom-[14%] rounded-full border border-gold/50 px-6 py-3 text-xs uppercase tracking-[0.25em] sm:px-8 sm:tracking-[0.4em] text-gold transition hover:bg-gold/10">
           <span>Tap to open your invitation</span>
         </button>
       ) : (

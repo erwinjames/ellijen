@@ -21,10 +21,10 @@ export default function Nav() {
 
   return (
     <nav ref={ref} className="fixed inset-x-0 top-0 z-40 flex items-center justify-between px-5 py-3 text-xs uppercase tracking-[0.25em] backdrop-blur-sm sm:px-8">
-      <a href="#top" className="font-serif text-base normal-case tracking-normal italic text-gold">
+      <a href="#top" className="shrink-0 whitespace-nowrap font-serif text-base normal-case tracking-normal italic text-gold">
         {wedding.couple.a[0]} &amp; {wedding.couple.b[0]}
       </a>
-      <div className="flex gap-4 overflow-x-auto text-cream/70 sm:gap-7">
+      <div className="flex flex-wrap justify-end gap-x-3 gap-y-1 text-[11px] tracking-[0.15em] text-cream/70 sm:gap-7 sm:text-xs sm:tracking-[0.25em]">
         {links.map(([label, href]) => (
           <a key={href} href={href} className="whitespace-nowrap transition hover:text-gold">
             {label}

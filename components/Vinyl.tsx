@@ -16,7 +16,7 @@ export default function Vinyl({ playing, onToggle }: { playing: boolean; onToggl
       onClick={onToggle}
       aria-pressed={playing}
       title={playing ? "Pause music" : "Play music"}
-      className="group fixed bottom-6 right-6 z-40 flex items-center gap-3 rounded-full bg-ink-2/70 py-2 pr-4 pl-2 backdrop-blur"
+      className="group fixed bottom-6 right-6 z-40 flex items-center gap-3 rounded-full bg-ink-2/70 p-2 backdrop-blur sm:pr-4"
     >
       <span
         className="relative block size-14 rounded-full shadow-[0_0_20px_rgba(232,192,105,0.25)] animate-spin"
@@ -31,7 +31,7 @@ export default function Vinyl({ playing, onToggle }: { playing: boolean; onToggl
         <span className="absolute inset-[46%] rounded-full bg-ink" />
         <span className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/10 to-transparent" />
       </span>
-      <span className="text-xs uppercase tracking-[0.3em] text-cream/70 group-hover:text-cream">{playing ? "Playing" : "Paused"}</span>
+      <span className="hidden text-xs uppercase tracking-[0.3em] text-cream/70 group-hover:text-cream sm:inline">{playing ? "Playing" : "Paused"}</span>
     </button>
   );
 }
