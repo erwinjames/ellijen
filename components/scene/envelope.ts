@@ -1,66 +1,71 @@
 import * as THREE from "three";
 import { wedding } from "@/lib/wedding";
+import { noiseTexture } from "./textures";
 
-// Procedural paper envelope with wax seal and a letter card inside. Dimensions in scene units.
+// Procedural vintage kraft envelope with wax seal and a letter card inside. Dimensions in scene units.
 export function buildEnvelope() {
-  const paper = new THREE.MeshStandardMaterial({ color: 0xbfae8c, roughness: 1, envMapIntensity: 0.1 });
-  const paperDark = new THREE.MeshStandardMaterial({ color: 0xa8957a, roughness: 1, envMapIntensity: 0.1, side: THREE.DoubleSide });
+  // Speckled grain multiplied into the kraft colour gives the aged-paper look.
+  const grain = noiseTexture(256, 205);
+  grain.repeat.set(1, 1);
+  const kraft = { roughness: 1, envMapIntensity: 0.1, map: grain };
+  const paper = new THREE.MeshStandardMaterial({ ...kraft, color: 0x8f6a44 });
+  const paperDark = new THREE.MeshStandardMaterial({ ...kraft, color: 0x7a5836, side: THREE.DoubleSide });
+  const inside = new THREE.MeshStandardMaterial({ color: 0x4a3826, roughness: 1, envMapIntensity: 0.05 });
+  const tri = (pts: [number, number][]) => new THREE.ShapeGeometry(new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y))));
 
   const group = new THREE.Group();
+  // Hollow shell (back panel + front pocket + flap); the letter sits inside it and the shell drops away on open.
+  const shell = new THREE.Group();
+  group.add(shell);
 
-  const body = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.7, 0.06), paper);
-  body.castShadow = body.receiveShadow = true;
-  group.add(body);
+  // Back panel; its inner (+z) face is shadowed paper, seen through the V once the flap lifts.
+  const back = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.7, 0.02), [paper, paper, paper, paper, inside, paper]);
+  back.position.z = -0.03;
+  back.castShadow = back.receiveShadow = true;
+  shell.add(back);
 
-  // Front "V" pocket overlay: left, right, bottom triangles meeting at the centre.
-  const pocket = new THREE.Shape();
-  pocket.moveTo(-1.3, -0.85);
-  pocket.lineTo(1.3, -0.85);
-  pocket.lineTo(0, 0);
-  pocket.lineTo(1.3, 0.85);
-  pocket.lineTo(1.3, -0.85);
-  pocket.moveTo(-1.3, -0.85);
-  pocket.lineTo(-1.3, 0.85);
-  pocket.lineTo(0, 0);
-  const pocketMesh = new THREE.Mesh(new THREE.ShapeGeometry(pocket), paperDark);
-  pocketMesh.position.z = 0.035;
-  group.add(pocketMesh);
+  // Front pocket: side folds plus a bottom fold laid over them, leaving the top V open.
+  const sides = new THREE.Mesh(tri([[-1.3, -0.85], [0, 0], [-1.3, 0.85]]), paperDark);
+  const sides2 = new THREE.Mesh(tri([[1.3, -0.85], [1.3, 0.85], [0, 0]]), paperDark);
+  const bottom = new THREE.Mesh(tri([[-1.3, -0.85], [1.3, -0.85], [0, 0.05]]), paper);
+  sides.position.z = sides2.position.z = 0.03;
+  bottom.position.z = 0.036;
+  bottom.castShadow = true;
+  shell.add(sides, sides2, bottom);
 
   // Flap hangs from the top edge; rotating the pivot opens it.
-  const flapShape = new THREE.Shape();
-  flapShape.moveTo(-1.3, 0);
-  flapShape.lineTo(1.3, 0);
-  flapShape.lineTo(0, -1.0);
-  const flap = new THREE.Mesh(new THREE.ShapeGeometry(flapShape), paperDark);
+  const flap = new THREE.Mesh(tri([[-1.3, 0], [1.3, 0], [0, -1.0]]), paperDark);
   flap.castShadow = true;
   const flapPivot = new THREE.Group();
-  flapPivot.position.set(0, 0.85, 0.04);
+  flapPivot.position.set(0, 0.85, 0.045);
   flapPivot.add(flap);
-  group.add(flapPivot);
+  shell.add(flapPivot);
 
-  const sealMat = new THREE.MeshStandardMaterial({ color: 0x8b1a2b, roughness: 0.45, emissive: 0x3a0510, emissiveIntensity: 0.4 });
+  const sealMat = new THREE.MeshStandardMaterial({ color: 0x7a1424, roughness: 0.7, envMapIntensity: 0.15, emissive: 0x2a0408, emissiveIntensity: 0.5 });
   const seal = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.19, 0.05, 32), sealMat);
   seal.rotation.x = Math.PI / 2;
   seal.position.set(0, -0.82, 0.03);
   flapPivot.add(seal);
 
-  // Letter card inside the body (hidden until it slides up).
+  // Letter card between back panel and pocket (hidden until it slides up).
+  // Unlit on purpose: lit paper blew out as it passed the orbiting point lights near the camera.
   const letterTex = letterTexture();
-  const letterMat = new THREE.MeshStandardMaterial({ map: letterTex, roughness: 1, envMapIntensity: 0.1, transparent: true });
+  const letterMat = new THREE.MeshBasicMaterial({ map: letterTex, color: 0xfaf4ea, transparent: true });
   const letter = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.5), letterMat);
   letter.position.set(0, -0.05, 0);
   group.add(letter);
 
   return {
     group,
-    body,
+    shell,
     flapPivot,
     seal,
     letter,
     dispose() {
-      [body, pocketMesh, flap, seal, letter].forEach((m) => m.geometry.dispose());
-      [paper, paperDark, sealMat, letterMat].forEach((m) => m.dispose());
+      [back, sides, sides2, bottom, flap, seal, letter].forEach((m) => m.geometry.dispose());
+      [paper, paperDark, inside, sealMat, letterMat].forEach((m) => m.dispose());
       letterTex.dispose();
+      grain.dispose();
     },
   };
 }
@@ -88,8 +93,12 @@ function letterTexture() {
     ctx.font = '500 34px "Cormorant Garamond", Georgia, serif';
     ctx.fillText("YOU ARE INVITED TO THE WEDDING OF", w / 2, 190);
     ctx.fillStyle = "#1c1428";
-    ctx.font = 'italic 300 150px "Cormorant Garamond", Georgia, serif';
-    ctx.fillText(`${wedding.couple.a} & ${wedding.couple.b}`, w / 2, 370);
+    // Shrink the names until they fit inside the inner border.
+    const names = `${wedding.couple.a} & ${wedding.couple.b}`;
+    let size = 150;
+    do ctx.font = `italic 300 ${size}px "Cormorant Garamond", Georgia, serif`;
+    while (ctx.measureText(names).width > w - 180 && (size -= 6) > 40);
+    ctx.fillText(names, w / 2, 370);
     ctx.fillStyle = "#6a5a3a";
     ctx.font = 'italic 400 44px "Cormorant Garamond", Georgia, serif';
     ctx.fillText(

@@ -2,7 +2,7 @@
 type Person = { name: string; note?: string; image?: string };
 
 export const wedding = {
-  couple: { a: "Elli", b: "Jen" },
+  couple: { a: "Elijah", b: "Jennifer" },
   // ISO date-time of the ceremony (local time of the venue).
   date: "2027-06-12T15:00:00+08:00",
   venue: {

@@ -17,6 +17,7 @@ export default function Invitation() {
   const handleRef = useRef<SceneHandle | null>(null);
   const playerRef = useRef<Player | null>(null);
   const [ready, setReady] = useState(false);
+  const [opening, setOpening] = useState(false);
   const [opened, setOpened] = useState(false);
   const [playing, setPlaying] = useState(false);
   const { theme } = useSettings();
@@ -40,7 +41,10 @@ export default function Invitation() {
       try {
         handleRef.current = createWeddingScene(canvasRef.current, {
           onReady: () => setReady(true),
-          onOpenStart: () => playerRef.current?.play(),
+          onOpenStart: () => {
+            setOpening(true);
+            playerRef.current?.play();
+          },
           onOpened: () => setOpened(true),
         });
         handleRef.current.setTheme(themeRef.current.gold, themeRef.current.rose);
@@ -89,7 +93,7 @@ export default function Invitation() {
           {wedding.couple.a} &amp; {wedding.couple.b}
         </p>
       </div>
-      <Hero opened={opened} onOpen={() => handleRef.current?.open()} />
+      <Hero opening={opening} opened={opened}onOpen={() => handleRef.current?.open()} />
       {opened && <Nav />}
       {opened && <Vinyl playing={playing} onToggle={() => playerRef.current?.toggle()} />}
     </>

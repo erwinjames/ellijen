@@ -53,10 +53,10 @@ export function petalTexture() {
 }
 
 // Grayscale noise used as a roughnessMap so the gold reads as brushed, not CG-clean.
-export function noiseTexture(size = 256) {
+export function noiseTexture(size = 256, min = 150) {
   const data = new Uint8Array(size * size * 4);
   for (let i = 0; i < size * size; i++) {
-    const v = 150 + Math.random() * 105;
+    const v = min + Math.random() * (255 - min);
     data[i * 4] = data[i * 4 + 1] = data[i * 4 + 2] = v;
     data[i * 4 + 3] = 255;
   }

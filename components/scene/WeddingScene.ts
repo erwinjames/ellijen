@@ -265,7 +265,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts = {}): 
       console.warn("onOpenStart failed", err); // audio problems must not block the envelope
     }
     document.body.style.cursor = "";
-    const letterMat = env.letter.material as THREE.MeshStandardMaterial;
+    const letterMat = env.letter.material as THREE.MeshBasicMaterial;
     openTl = gsap
       .timeline({
         defaults: { ease: "power2.inOut" },
@@ -276,11 +276,14 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts = {}): 
         },
       })
       .to(env.seal.scale, { x: 0, y: 0, z: 0, duration: 0.45, ease: "back.in(2)" })
-      .to(env.flapPivot.rotation, { x: -Math.PI * 0.95, duration: 1.1 }, "-=0.1")
-      .to(env.letter.position, { y: 1.75, duration: 1.1, ease: "power2.out" }, "-=0.5")
-      .to(env.letter.position, { y: 0.4, z: 1.6, duration: 1.1 }, "+=0.2")
+      // Flap swings up and settles leaning back; once it is clear of the pocket its hinge slides behind the letter.
+      .to(env.flapPivot.rotation, { x: -Math.PI * 1.05, duration: 1.1 }, "-=0.1")
+      .to(env.flapPivot.position, { z: -0.05, duration: 0.5 }, "<0.6")
+      .to(env.letter.position, { y: 1.75, duration: 1.1, ease: "power2.out" }, "-=0.15")
+      // Portrait screens are narrow: bring the letter less far forward so the whole card stays in frame.
+      .to(env.letter.position, { y: 0.4, z: camera.aspect < 1 ? 0.6 : 1.6, duration: 1.1 }, "+=0.2")
       .to(env.letter.scale, { x: 1.3, y: 1.3, z: 1.3, duration: 1.1 }, "<")
-      .to([env.body.position, env.flapPivot.position], { y: "-=4", duration: 1.1, ease: "power2.in" }, "<")
+      .to(env.shell.position, { y: -4, duration: 1.1, ease: "power2.in" }, "<")
       .to(cam, { x: story.x, y: story.y, z: story.z, lookY: story.lookY, duration: 1.6 }, "<+0.3")
       .to(letterMat, { opacity: 0, duration: 0.7 }, "+=0.9")
       .to(rings.scale, { x: 1, y: 1, z: 1, duration: 1.3, ease: "back.out(1.4)" }, "-=0.5")

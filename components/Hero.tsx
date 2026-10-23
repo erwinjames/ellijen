@@ -11,7 +11,7 @@ const dateLabel = new Date(wedding.date).toLocaleDateString("en-US", {
   year: "numeric",
 });
 
-export default function Hero({ opened, onOpen }: { opened: boolean; onOpen: () => void }) {
+export default function Hero({ opening, opened, onOpen }: { opening: boolean; opened: boolean; onOpen: () => void }) {
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -47,9 +47,16 @@ export default function Hero({ opened, onOpen }: { opened: boolean; onOpen: () =
   return (
     <section ref={ref} id="top" data-chapter="hero" className="relative flex min-h-dvh flex-col items-center justify-center px-4 text-center">
       {!opened ? (
-        <button onClick={onOpen} className="hero-prompt absolute bottom-[14%] rounded-full border border-gold/50 px-6 py-3 text-xs uppercase tracking-[0.25em] sm:px-8 sm:tracking-[0.4em] text-gold transition hover:bg-gold/10">
-          <span>Tap to open your invitation</span>
-        </button>
+        // Wrapper fades the prompt once the envelope starts opening (gsap owns the button's own opacity).
+        <div
+          className={`absolute inset-x-0 bottom-[14%] flex justify-center px-4 transition-opacity duration-500 [@media(max-height:500px)]:bottom-3 ${
+            opening ? "pointer-events-none opacity-0" : ""
+          }`}
+        >
+          <button onClick={onOpen} className="hero-prompt rounded-full border border-gold/50 px-6 py-3 text-xs uppercase tracking-[0.25em] sm:px-8 sm:tracking-[0.4em] text-gold transition hover:bg-gold/10">
+            <span>Tap to open your invitation</span>
+          </button>
+        </div>
       ) : (
         <>
           <p className="hero-eyebrow mb-6 text-xs uppercase tracking-[0.5em] text-gold/80">Together with their families</p>
