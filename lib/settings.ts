@@ -15,6 +15,7 @@ export const defaultSettings: Settings = {
     note: wedding.dressCode.note,
     palette: wedding.dressCode.palette.map(([name, hex]) => ({ name, hex })),
   },
+  song: wedding.songUrl,
 };
 
 export const normalize = (raw: unknown) => normalizeWith(raw, defaultSettings);

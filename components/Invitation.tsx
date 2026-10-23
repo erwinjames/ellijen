@@ -20,8 +20,10 @@ export default function Invitation() {
   const [opening, setOpening] = useState(false);
   const [opened, setOpened] = useState(false);
   const [playing, setPlaying] = useState(false);
-  const { theme } = useSettings();
+  const { theme, song } = useSettings();
   const themeRef = useRef(theme);
+  const songRef = useRef(song);
+  useEffect(() => void (songRef.current = song), [song]);
 
   // Admin-chosen colours: CSS tokens for the page, material colours for the scene.
   useEffect(() => {
@@ -34,7 +36,6 @@ export default function Invitation() {
     let triggers: ScrollTrigger[] = [];
     let cancelled = false;
     gsap.registerPlugin(ScrollTrigger);
-    playerRef.current = createPlayer(wedding.songUrl, setPlaying);
 
     import("./scene/WeddingScene").then(({ createWeddingScene }) => {
       if (cancelled || !canvasRef.current) return;
@@ -43,7 +44,9 @@ export default function Invitation() {
           onReady: () => setReady(true),
           onOpenStart: () => {
             setOpening(true);
-            playerRef.current?.play();
+            // Created on the opening tap (not on mount) so it uses the admin's song even if settings loaded late.
+            playerRef.current ??= createPlayer(songRef.current, setPlaying);
+            playerRef.current.play();
           },
           onOpened: () => setOpened(true),
         });
@@ -95,7 +98,7 @@ export default function Invitation() {
       </div>
       <Hero opening={opening} opened={opened}onOpen={() => handleRef.current?.open()} />
       {opened && <Nav />}
-      {opened && <Vinyl playing={playing} onToggle={() => playerRef.current?.toggle()} />}
+      {opened && <Vinyl playing={playing} onToggle={() => (playerRef.current ??= createPlayer(songRef.current, setPlaying)).toggle()} />}
     </>
   );
 }

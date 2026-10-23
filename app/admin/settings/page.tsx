@@ -135,14 +135,25 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        <section className="rounded-2xl border border-cream/10 bg-ink-2 p-6">
+          <h2 className="font-serif text-2xl">Theme music</h2>
+          <p className="mt-1 text-sm text-cream/50">
+            Plays when guests open the envelope. Paste a direct link to an mp3 (the link itself must play the file, not open a page), or a path under public/ like /audio/song.mp3. Leave empty for the built-in music-box tune.
+          </p>
+          <label className="mt-6 block">
+            <span className={label}>Song link</span>
+            <input type="url" value={s.song} maxLength={1000} placeholder="https://…/song.mp3" onChange={(e) => setS({ ...s, song: e.target.value.trim() })} className={`mt-2 ${field}`} />
+          </label>
+          {s.song && !/^(https:\/\/|\/)/.test(s.song) && <p className="mt-2 text-sm text-rose">Use an https:// link or a /path under public/.</p>}        </section>
+
         {error && <p role="alert" className="text-sm text-rose">{error}</p>}
         <div className="flex items-center gap-4">
           <button disabled={status === "saving"} className="rounded-full bg-gold px-8 py-3 text-sm uppercase tracking-[0.3em] text-ink disabled:opacity-60">
             {status === "saving" ? "Saving…" : "Save"}
           </button>
           {status === "saved" && <span className="text-sm text-emerald-300">Saved. The public site updates instantly.</span>}
-          <button type="button" onClick={() => setS(defaultSettings)} className="ml-auto text-sm text-cream/50 hover:text-cream">
-            Reset to defaults
+          <button type="button" onClick={() => setS({ ...defaultSettings, song: s.song })} className="ml-auto text-sm text-cream/50 hover:text-cream">
+            Reset colours &amp; dress code
           </button>
         </div>
       </form>

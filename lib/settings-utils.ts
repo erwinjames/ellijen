@@ -2,11 +2,15 @@
 export type Settings = {
   theme: { gold: string; rose: string; ink: string };
   dressCode: { title: string; note: string; palette: { name: string; hex: string }[] };
+  /** Theme music: direct link to an audio file (https:// or a path under public/). Empty = built-in music-box tune. */
+  song: string;
 };
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const hex = (v: unknown, fallback: string) => (typeof v === "string" && HEX.test(v) ? v.toLowerCase() : fallback);
 const str = (v: unknown, fallback: string, max: number) => (typeof v === "string" ? v.slice(0, max) : fallback);
+const song = (v: unknown, fallback: string) =>
+  typeof v === "string" && (v === "" || ((v.startsWith("https://") || v.startsWith("/")) && v.length <= 1000)) ? v : fallback;
 
 // Tolerates partial/old documents so a bad save can never blank the public site.
 export function normalize(raw: unknown, d: Settings): Settings {
@@ -31,6 +35,7 @@ export function normalize(raw: unknown, d: Settings): Settings {
             .filter((p) => p.name)
         : d.dressCode.palette,
     },
+    song: song((raw as { song?: unknown } | null | undefined)?.song, d.song),
   };
 }
 
