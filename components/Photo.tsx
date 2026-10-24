@@ -23,7 +23,9 @@ export default function Photo({
 }) {
   const frame = useRef<HTMLDivElement>(null);
   const img = useRef<HTMLImageElement>(null);
-  const [missing, setMissing] = useState(false);
+  // Remembers which src failed, so swapping in an uploaded photo (settings load after mount) shows it again.
+  const [failed, setFailed] = useState<string | null>(null);
+  const missing = !src || failed === src;
 
   useEffect(() => {
     if (!parallax) return;
@@ -46,11 +48,11 @@ export default function Photo({
         ref={(el) => {
           img.current = el;
           // A 404 that fired before hydration never reaches onError; a complete image with no pixels is that case.
-          if (el && el.complete && el.naturalWidth === 0) setMissing(true);
+          if (el && src && el.complete && el.naturalWidth === 0) setFailed(src);
         }}
-        src={src}
+        src={src || undefined}
         alt={alt}
-        onError={() => setMissing(true)} className={`h-full w-full object-cover will-change-transform ${missing ? "invisible" : ""}`} loading="lazy" />
+        onError={() => setFailed(src)} className={`h-full w-full object-cover will-change-transform ${missing ? "invisible" : ""}`} loading="lazy" />
       {missing && (
         <div className={`absolute inset-2 flex flex-col items-center justify-center gap-2 border border-dashed border-gold/40 p-2 text-center ${rounded}`}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" className="size-[22%] max-h-16 text-gold/70" aria-hidden>
@@ -60,7 +62,7 @@ export default function Photo({
           </svg>
           {label !== "" && <p className="font-serif text-lg italic leading-tight text-cream/80 sm:text-2xl">{label ?? alt}</p>}
           <p className="max-w-full break-all px-2 text-[10px] uppercase tracking-[0.15em] text-cream/50">
-            add <code className="text-gold/80">public{src}</code>
+            {src.startsWith("/") ? <>add <code className="text-gold/80">public{src}</code></> : "photo coming soon"}
           </p>
         </div>
       )}

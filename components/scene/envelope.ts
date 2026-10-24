@@ -1,9 +1,11 @@
 import * as THREE from "three";
-import { wedding } from "@/lib/wedding";
 import { noiseTexture } from "./textures";
 
+/** What the letter card and seal print, from admin → Settings. */
+export type Card = { a: string; b: string; date: string; venue: string; sealLogo: string };
+
 // Procedural vintage kraft envelope with wax seal and a letter card inside. Dimensions in scene units.
-export function buildEnvelope() {
+export function buildEnvelope(card: Card) {
   // Speckled grain multiplied into the kraft colour gives the aged-paper look.
   const grain = noiseTexture(256, 205);
   grain.repeat.set(1, 1);
@@ -54,7 +56,8 @@ export function buildEnvelope() {
   const sealGeo = new THREE.ExtrudeGeometry(blob, { depth: 0.02, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 3, curveSegments: 1 });
   const seal = new THREE.Mesh(sealGeo, sealMat);
   seal.castShadow = true;
-  const stampTex = stampTexture();
+  const stamp_ = stampTexture(card);
+  const stampTex = stamp_.tex;
   const stampMat = new THREE.MeshStandardMaterial({ ...wax, map: stampTex, bumpMap: stampTex, bumpScale: 3 });
   const stamp = new THREE.Mesh(new THREE.CircleGeometry(0.15, 48), stampMat);
   stamp.position.z = 0.036; // just above the bevelled front face
@@ -64,7 +67,8 @@ export function buildEnvelope() {
 
   // Letter card between back panel and pocket (hidden until it slides up).
   // Unlit on purpose: lit paper blew out as it passed the orbiting point lights near the camera.
-  const letterTex = letterTexture();
+  const letter_ = letterTexture(card);
+  const letterTex = letter_.tex;
   const letterMat = new THREE.MeshBasicMaterial({ map: letterTex, color: 0xfaf4ea, transparent: true });
   const letter = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.5), letterMat);
   letter.position.set(0, -0.05, 0);
@@ -76,6 +80,10 @@ export function buildEnvelope() {
     flapPivot,
     seal,
     letter,
+    setCard(c: Card) {
+      letter_.draw(c);
+      stamp_.draw(c);
+    },
     dispose() {
       [back, sides, sides2, bottom, flap, seal, stamp, letter].forEach((m) => m.geometry.dispose());
       [paper, paperDark, inside, sealMat, stampMat, letterMat].forEach((m) => m.dispose());
@@ -85,7 +93,7 @@ export function buildEnvelope() {
   };
 }
 
-function letterTexture() {
+function letterTexture(first: Card) {
   const w = 1024;
   const h = 668;
   const canvas = document.createElement("canvas");
@@ -95,6 +103,7 @@ function letterTexture() {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
 
+  let card = first;
   const draw = () => {
     ctx.fillStyle = "#cdbd9c";
     ctx.fillRect(0, 0, w, h);
@@ -109,7 +118,7 @@ function letterTexture() {
     ctx.fillText("YOU ARE INVITED TO THE WEDDING OF", w / 2, 190);
     ctx.fillStyle = "#1c1428";
     // Shrink the names until they fit inside the inner border.
-    const names = `${wedding.couple.a} & ${wedding.couple.b}`;
+    const names = `${card.a} & ${card.b}`;
     let size = 150;
     do ctx.font = `italic 300 ${size}px "Cormorant Garamond", Georgia, serif`;
     while (ctx.measureText(names).width > w - 180 && (size -= 6) > 40);
@@ -117,22 +126,22 @@ function letterTexture() {
     ctx.fillStyle = "#6a5a3a";
     ctx.font = 'italic 400 44px "Cormorant Garamond", Georgia, serif';
     ctx.fillText(
-      new Date(wedding.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+      new Date(card.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "Asia/Manila" }),
       w / 2,
       470,
     );
     ctx.font = '400 30px "Cormorant Garamond", Georgia, serif';
-    ctx.fillText(wedding.venue.name, w / 2, 530);
+    ctx.fillText(card.venue, w / 2, 530);
     tex.needsUpdate = true;
   };
   draw();
   // Redraw once the web font is in, so the card does not keep the Georgia fallback.
   document.fonts?.load('italic 300 150px "Cormorant Garamond"').then(draw).catch(() => {});
-  return tex;
+  return { tex, draw: (c: Card) => ((card = c), draw()) };
 }
 
 // Greyscale stamp face (tinted by the wax colour, doubles as the bump map): sunken ring + raised initials.
-function stampTexture() {
+function stampTexture(first: Card) {
   const n = 256;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = n;
@@ -165,7 +174,7 @@ function stampTexture() {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.font = 'italic 500 100px "Cormorant Garamond", Georgia, serif';
-    const initials = `${wedding.couple.a[0]}&${wedding.couple.b[0]}`;
+    const initials = `${card.a[0] ?? ""}&${card.b[0] ?? ""}`;
     // Dark offset under light text reads as an embossed relief.
     ctx.fillStyle = "#6a6a6a";
     ctx.fillText(initials, n / 2 + 3, n / 2 + 5);
@@ -173,12 +182,23 @@ function stampTexture() {
     ctx.fillText(initials, n / 2, n / 2 + 2);
     tex.needsUpdate = true;
   };
+  let card = first;
   const logo = new Image();
-  if (wedding.sealLogo) {
-    logo.onload = draw;
-    logo.src = wedding.sealLogo;
-  }
+  logo.onload = draw;
+  const setLogo = (src: string) => {
+    if (src) logo.src = src;
+    else logo.removeAttribute("src");
+  };
+  setLogo(card.sealLogo);
   draw();
   document.fonts?.load('italic 500 100px "Cormorant Garamond"').then(draw).catch(() => {});
-  return tex;
+  return {
+    tex,
+    draw(c: Card) {
+      const logoChanged = c.sealLogo !== card.sealLogo;
+      card = c;
+      if (logoChanged) setLogo(c.sealLogo);
+      draw();
+    },
+  };
 }

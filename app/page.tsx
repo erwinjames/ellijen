@@ -1,20 +1,12 @@
+"use client";
+
 import Countdown from "@/components/Countdown";
 import DressCode from "@/components/DressCode";
 import Invitation from "@/components/Invitation";
 import Photo from "@/components/Photo";
 import Reveal from "@/components/Reveal";
 import RsvpForm from "@/components/RsvpForm";
-import { wedding } from "@/lib/wedding";
-
-const time = new Date(wedding.date).toLocaleTimeString("en-US", {
-  hour: "numeric",
-  minute: "2-digit",
-  timeZone: "Asia/Manila",
-});
-const deadline = new Date(wedding.rsvpDeadline).toLocaleDateString("en-US", {
-  month: "long",
-  day: "numeric",
-});
+import { useSettings } from "@/lib/settings";
 const initials = (name: string) =>
   name
     .replace(/^(Mr\.|Mrs\.|Ms\.)\s*/g, "")
@@ -51,7 +43,11 @@ function Title({
 
 const card = "rounded-3xl border border-cream/10 bg-ink-2/85 backdrop-blur";
 
+// Client page: all copy and photos come live from admin → Settings (wedding.ts holds the defaults).
 export default function Home() {
+  const wedding = useSettings();
+  const time = new Date(wedding.date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Manila" });
+  const deadline = new Date(wedding.rsvpDeadline).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
   return (
     <>
       <Invitation />
@@ -177,9 +173,9 @@ export default function Home() {
                 Order of the day
               </p>
               <ol className="mt-10 border-l border-gold/30 pl-8">
-                {wedding.program.map((p) => (
+                {wedding.program.map((p, i) => (
                   <li
-                    key={p.time}
+                    key={i}
                     data-reveal="left"
                     className="relative pb-10 last:pb-0"
                   >
@@ -211,9 +207,9 @@ export default function Home() {
             </p>
           </Reveal>
           <div className="mt-16 grid gap-6 sm:grid-cols-2">
-            {wedding.entourage.map((g) => (
+            {wedding.entourage.map((g, gi) => (
               <Reveal
-                key={g.role}
+                key={gi}
                 className={`${card} p-7 ${g.people.length > 2 ? "sm:col-span-2" : ""}`}
               >
                 <p
@@ -225,9 +221,9 @@ export default function Home() {
                 <ul
                   className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-7 sm:gap-x-10"
                 >
-                  {g.people.map((p) => (
+                  {g.people.map((p, i) => (
                     <li
-                      key={p.name}
+                      key={i}
                       data-reveal="pop"
                       className="flex w-32 flex-col items-center text-center sm:w-36"
                     >
@@ -279,7 +275,7 @@ export default function Home() {
           <Reveal className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-3">
             {wedding.gallery.map((src, i) => (
               <div
-                key={src}
+                key={i}
                 data-reveal="pop"
                 className={
                   i % 3 === 1 ? "aspect-[3/4]" : "aspect-[4/5] sm:translate-y-8"
@@ -307,9 +303,9 @@ export default function Home() {
             <Title eyebrow="Good to know">Questions &amp; answers</Title>
           </Reveal>
           <Reveal className="mt-12 space-y-3">
-            {wedding.faq.map((f) => (
+            {wedding.faq.map((f, i) => (
               <details
-                key={f.q}
+                key={i}
                 data-reveal
                 className={`group ${card} px-6 py-5 open:border-gold/40`}
               >
@@ -359,8 +355,8 @@ export default function Home() {
               {wedding.travel.note}
             </p>
             <ul className="mt-8 space-y-4">
-              {wedding.travel.stays.map((h) => (
-                <li key={h.name} data-reveal="left">
+              {wedding.travel.stays.map((h, i) => (
+                <li key={i} data-reveal="left">
                   <a
                     href={h.url}
                     target="_blank"

@@ -1,6 +1,6 @@
 # Elli & Jen — wedding site + RSVP admin
 
-Next.js 16 · Three.js + GSAP public site · Firebase (Firestore + Auth) · Tailwind 4
+Next.js 16 · Three.js + GSAP public site · Firebase (Firestore + Auth + Storage) · Tailwind 4
 
 ## Routes
 
@@ -9,11 +9,11 @@ Next.js 16 · Three.js + GSAP public site · Firebase (Firestore + Auth) · Tail
 | `/`            | Invitation: 3D envelope → tap to open → music → full site (story, countdown, details, program, entourage, dress code, gallery, FAQ, gifts, travel, RSVP) |
 | `/admin/login` | Email/password sign-in (Firebase Auth)                               |
 | `/admin`       | Live RSVP list, yes/no/headcount stats, search, CSV export, delete   |
-| `/admin/settings` | Theme colours (accent, highlight, background) and dress code (title, note, palette); applied live to the public site |
+| `/admin/settings` | All site content: names, date, venue, story, order of the day, entourage, gallery, Q&A, gifts, travel, seal logo, photos, theme colours, dress code, theme song (YouTube or mp3); applied live to the public site |
 
 ## Setup
 
-1. **Firebase project** → Build → *Firestore Database* (production mode) and *Authentication* → enable **Email/Password**.
+1. **Firebase project** → Build → *Firestore Database* (production mode), *Storage* (for photo uploads; needs the Blaze plan) and *Authentication* → enable **Email/Password**.
 2. Authentication → Users → **Add user** for each admin (the couple). There is no sign-up page on purpose.
 3. Project settings → Your apps → Web app → copy the config into `.env.local`:
 
@@ -26,10 +26,10 @@ Next.js 16 · Three.js + GSAP public site · Firebase (Firestore + Auth) · Tail
    ```bash
    npx firebase-tools login
    npx firebase-tools use <project-id>
-   npx firebase-tools deploy --only firestore:rules
+   npx firebase-tools deploy --only firestore:rules,storage
    ```
 
-   Or paste `firestore.rules` into Firestore → Rules in the console.
+   Or paste `firestore.rules` into Firestore → Rules and `storage.rules` into Storage → Rules in the console.
 
 5. Run it:
 
@@ -41,7 +41,7 @@ Next.js 16 · Three.js + GSAP public site · Firebase (Firestore + Auth) · Tail
 
 1. **Envelope**: a 3D sealed envelope floats on screen; scrolling is locked. Tap anywhere (or the button).
 2. **Opening**: the wax seal pops, the flap lifts, the invitation card slides out toward the camera, the envelope falls away and the gold rings bloom in.
-3. **Music**: the "old disk" (bottom-right vinyl) starts on that tap and is the play/pause control. Put a track at `public/audio/song.mp3` and set `songUrl` in `lib/wedding.ts`; with no file a built-in music-box tune with vinyl crackle plays.
+3. **Music**: the "old disk" (bottom-right vinyl) starts on that tap and is the play/pause control. Set the song in admin → Site settings → Theme music: a YouTube link or embed code (played by a hidden YouTube player), or an mp3 link; empty plays a built-in music-box tune with vinyl crackle.
 4. **Story mode**: scroll unlocks. Each section is a chapter (`data-chapter`) and whichever one is on screen drives the 3D scene: the rings part and hide behind the photo for "how we met", converge and glow for "the proposal", lie flat under a top-down camera for details, pull back with rising sparkles for the countdown, and close in warm for RSVP. Every chapter pairs a photo (with scroll parallax) and text, and runs its own GSAP entrance (slide, flip, pop).
 
 5. **The rest of the site** follows in order: countdown, when & where with the order of the day, entourage (parents, principal and secondary sponsors, maid of honor, best man, bridesmaids, groomsmen, bearers, flower girls), dress code with colour palette, gallery, FAQ, gifts, travel & stay, then RSVP. A top nav appears once the envelope is open. Every section is a 3D chapter and has its own entrance animation.
@@ -50,9 +50,8 @@ Next.js 16 · Three.js + GSAP public site · Firebase (Firestore + Auth) · Tail
 
 ## Customise
 
-- Names, date, venue, RSVP deadline, hashtag, max guests: [`lib/wedding.ts`](lib/wedding.ts).
-- Theme colours and dress code: admin → Site settings (stored in Firestore `settings/site`; the values in `wedding.ts` are the defaults).
-- All content (names, date, venue, story chapters, program, entourage, dress code & palette, gallery paths, FAQ, gifts, travel): [`lib/wedding.ts`](lib/wedding.ts). Section layout: [`app/page.tsx`](app/page.tsx).
+- All content and colours: admin → Site settings (stored in Firestore `settings/site`, photos in Storage `site/`). [`lib/wedding.ts`](lib/wedding.ts) holds the defaults shown until something is saved, plus max guests per RSVP. Section layout: [`app/page.tsx`](app/page.tsx).
+- The browser tab title still comes from `wedding.ts` (it is rendered on the server).
 - 3D state per section: `CHAPTERS` in [`components/scene/WeddingScene.ts`](components/scene/WeddingScene.ts), keyed by each section's `data-chapter`.
 - Envelope / letter card look: [`components/scene/envelope.ts`](components/scene/envelope.ts). Music-box tune: [`lib/music.ts`](lib/music.ts).
 - Colours and fonts: `@theme` block in [`app/globals.css`](app/globals.css).

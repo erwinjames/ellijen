@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { gsap } from "gsap";
 import { submitRsvp } from "@/lib/rsvp";
+import { useSettings } from "@/lib/settings";
 import { wedding } from "@/lib/wedding";
 
 type Status = "idle" | "sending" | "done" | "error";
@@ -12,6 +13,7 @@ export default function RsvpForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
+  const { rsvpDeadline } = useSettings();
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -95,7 +97,7 @@ export default function RsvpForm() {
       <button type="submit" disabled={status === "sending"} className="w-full rounded-full bg-gold py-4 text-sm uppercase tracking-[0.3em] text-ink transition hover:brightness-110 disabled:opacity-60">
         {status === "sending" ? "Sending…" : "Send RSVP"}
       </button>
-      <p className="text-center text-xs text-cream/50">Kindly reply by {new Date(wedding.rsvpDeadline).toLocaleDateString("en-US", { month: "long", day: "numeric" })}.</p>
+      <p className="text-center text-xs text-cream/50">Kindly reply by {new Date(rsvpDeadline).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" })}.</p>
     </form>
   );
 }

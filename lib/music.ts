@@ -1,10 +1,75 @@
-// Background music. With wedding.songUrl: loops that file. Without: a generated music-box tune
-// with vinyl crackle, so the "old disk" always plays something. Call play() from a user gesture.
+// Background music (admin → Settings → Theme music). A YouTube link plays through a hidden YouTube player, any other
+// link loops that audio file, and empty plays a generated music-box tune with vinyl crackle, so the "old disk" always
+// plays something. Create the player ahead of time and call play() from a user gesture.
+import { youtubeId } from "./settings-utils";
 
 export type Player = { play(): void; pause(): void; toggle(): void; playing: boolean; dispose(): void };
 
 export function createPlayer(url: string, onChange: (playing: boolean) => void): Player {
-  return url ? fileplayer(url, onChange) : musicBox(onChange);
+  const yt = youtubeId(url);
+  return yt ? youtube(yt, onChange) : url ? fileplayer(url, onChange) : musicBox(onChange);
+}
+
+// Just the bits of the IFrame API used here (no @types/youtube for one call site).
+type YTPlayer = { playVideo(): void; pauseVideo(): void; setVolume(v: number): void; destroy(): void };
+type YTNamespace = { Player: new (el: HTMLElement, opts: object) => YTPlayer };
+declare global {
+  interface Window {
+    YT?: YTNamespace;
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+let ytApi: Promise<YTNamespace> | undefined;
+const loadYouTube = () =>
+  (ytApi ??= new Promise((resolve) => {
+    window.onYouTubeIframeAPIReady = () => resolve(window.YT!);
+    document.head.appendChild(Object.assign(document.createElement("script"), { src: "https://www.youtube.com/iframe_api" }));
+  }));
+
+// ponytail: iOS Safari may refuse to start YouTube audio that wasn't tapped inside the video itself; the vinyl then
+// stays paused. An mp3 link has no such limit, so suggest one if guests on iPhones report silence.
+function youtube(id: string, onChange: (p: boolean) => void): Player {
+  // Off-screen rather than display:none, which stops some browsers from playing at all.
+  const host = Object.assign(document.createElement("div"), { ariaHidden: "true" });
+  host.style.cssText = "position:fixed;left:-9999px;top:0;width:200px;height:200px;pointer-events:none";
+  const mount = host.appendChild(document.createElement("div"));
+  document.body.appendChild(host);
+  let yt: YTPlayer | undefined;
+  let wanted = false;
+  loadYouTube().then((YT) => {
+    if (!host.isConnected) return; // disposed while the API loaded
+    yt = new YT.Player(mount, {
+      videoId: id,
+      playerVars: { loop: 1, playlist: id, controls: 0, playsinline: 1, disablekb: 1 },
+      events: {
+        onReady: () => {
+          yt!.setVolume(60);
+          if (wanted) yt!.playVideo();
+        },
+        // 1 = playing, 2 = paused, 0 = ended (loop restarts it).
+        onStateChange: (e: { data: number }) => (e.data === 1 || e.data === 2) && onChange((p.playing = e.data === 1)),
+      },
+    });
+  });
+  const p: Player = {
+    playing: false,
+    play() {
+      wanted = true;
+      yt?.playVideo();
+    },
+    pause() {
+      wanted = false;
+      yt?.pauseVideo();
+      onChange((p.playing = false));
+    },
+    toggle: () => (p.playing || wanted ? p.pause() : p.play()),
+    dispose() {
+      wanted = false;
+      yt?.destroy();
+      host.remove();
+    },
+  };
+  return p;
 }
 
 function fileplayer(url: string, onChange: (p: boolean) => void): Player {

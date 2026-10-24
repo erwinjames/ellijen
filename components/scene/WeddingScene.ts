@@ -10,7 +10,7 @@ import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { GradeShader, backdropFragment, backdropVertex, particleFragment, particleVertex } from "./shaders";
 import { noiseTexture, petalTexture, sparkleTexture } from "./textures";
-import { buildEnvelope } from "./envelope";
+import { buildEnvelope, type Card } from "./envelope";
 import { wedding } from "@/lib/wedding";
 
 export type SceneHandle = {
@@ -20,10 +20,14 @@ export type SceneHandle = {
   open(): void;
   /** Recolour the gold (rings, sparkles, warm accent) and rose (fill light, sparkles) from admin settings. */
   setTheme(gold: string, rose: string): void;
+  /** Reprint the envelope's letter card and seal (names, date, venue, logo) from admin settings. */
+  setCard(card: Card): void;
   dispose(): void;
 };
 
 type Opts = {
+  /** Initial letter card / seal contents. */
+  card: Card;
   onReady?: () => void;
   onProgress?: (p: number) => void;
   /** Fired on the click that starts the opening (user gesture: safe to start audio). */
@@ -34,7 +38,7 @@ type Opts = {
 
 type Phase = "intro" | "opening" | "story";
 
-export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts = {}): SceneHandle {
+export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): SceneHandle {
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const mobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
   const disposables: { dispose(): void }[] = [];
@@ -110,7 +114,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts = {}): 
   disposables.push(floor.geometry, floorMat);
 
   // --- envelope (intro) ---------------------------------------------------------------------
-  const env = buildEnvelope();
+  const env = buildEnvelope(opts.card);
   scene.add(env.group);
   disposables.push(env);
 
@@ -432,6 +436,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts = {}): 
       rim.color.copy(g);
       accentWarm.copy(g).multiplyScalar(0.45);
     },
+    setCard: env.setCard,
     open,
     dispose() {
       renderer.setAnimationLoop(null);
