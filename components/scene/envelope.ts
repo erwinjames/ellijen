@@ -41,10 +41,25 @@ export function buildEnvelope() {
   flapPivot.add(flap);
   shell.add(flapPivot);
 
-  const sealMat = new THREE.MeshStandardMaterial({ color: 0x7a1424, roughness: 0.7, envMapIntensity: 0.15, emissive: 0x2a0408, emissiveIntensity: 0.5 });
-  const seal = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.19, 0.05, 32), sealMat);
-  seal.rotation.x = Math.PI / 2;
-  seal.position.set(0, -0.82, 0.03);
+  // Wax seal: wobbly poured-wax blob with a pressed stamp face carrying the couple's initials.
+  const wax = { color: 0x5c0c18, roughness: 0.7, envMapIntensity: 0.1, emissive: 0x1a0205, emissiveIntensity: 0.4 };
+  const sealMat = new THREE.MeshStandardMaterial(wax);
+  const blob = new THREE.Shape();
+  for (let i = 0; i <= 48; i++) {
+    const a = (i / 48) * Math.PI * 2;
+    const r = 0.2 + 0.012 * Math.sin(a * 5) + 0.008 * Math.sin(a * 11 + 1);
+    if (i) blob.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    else blob.moveTo(r, 0);
+  }
+  const sealGeo = new THREE.ExtrudeGeometry(blob, { depth: 0.02, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 3, curveSegments: 1 });
+  const seal = new THREE.Mesh(sealGeo, sealMat);
+  seal.castShadow = true;
+  const stampTex = stampTexture();
+  const stampMat = new THREE.MeshStandardMaterial({ ...wax, map: stampTex, bumpMap: stampTex, bumpScale: 3 });
+  const stamp = new THREE.Mesh(new THREE.CircleGeometry(0.15, 48), stampMat);
+  stamp.position.z = 0.036; // just above the bevelled front face
+  seal.add(stamp);
+  seal.position.set(0, -0.82, 0.016);
   flapPivot.add(seal);
 
   // Letter card between back panel and pocket (hidden until it slides up).
@@ -62,9 +77,9 @@ export function buildEnvelope() {
     seal,
     letter,
     dispose() {
-      [back, sides, sides2, bottom, flap, seal, letter].forEach((m) => m.geometry.dispose());
-      [paper, paperDark, inside, sealMat, letterMat].forEach((m) => m.dispose());
-      letterTex.dispose();
+      [back, sides, sides2, bottom, flap, seal, stamp, letter].forEach((m) => m.geometry.dispose());
+      [paper, paperDark, inside, sealMat, stampMat, letterMat].forEach((m) => m.dispose());
+      [letterTex, stampTex].forEach((t) => t.dispose());
       grain.dispose();
     },
   };
@@ -113,5 +128,57 @@ function letterTexture() {
   draw();
   // Redraw once the web font is in, so the card does not keep the Georgia fallback.
   document.fonts?.load('italic 300 150px "Cormorant Garamond"').then(draw).catch(() => {});
+  return tex;
+}
+
+// Greyscale stamp face (tinted by the wax colour, doubles as the bump map): sunken ring + raised initials.
+function stampTexture() {
+  const n = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = n;
+  const ctx = canvas.getContext("2d")!;
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+
+  const draw = () => {
+    ctx.fillStyle = "#d8d8d8";
+    ctx.fillRect(0, 0, n, n);
+    ctx.strokeStyle = "#8a8a8a";
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.arc(n / 2, n / 2, n / 2 - 14, 0, Math.PI * 2);
+    ctx.stroke();
+    if (logo.complete && logo.naturalWidth) {
+      // Fit the logo inside the ring; same dark-under-light trick for the relief.
+      const s = (n - 80) / Math.max(logo.naturalWidth, logo.naturalHeight);
+      const lw = logo.naturalWidth * s;
+      const lh = logo.naturalHeight * s;
+      ctx.globalAlpha = 0.55;
+      ctx.drawImage(logo, (n - lw) / 2 + 3, (n - lh) / 2 + 4, lw, lh);
+      ctx.globalAlpha = 1;
+      ctx.filter = "invert(1)";
+      ctx.drawImage(logo, (n - lw) / 2, (n - lh) / 2, lw, lh);
+      ctx.filter = "none";
+      tex.needsUpdate = true;
+      return;
+    }
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = 'italic 500 100px "Cormorant Garamond", Georgia, serif';
+    const initials = `${wedding.couple.a[0]}&${wedding.couple.b[0]}`;
+    // Dark offset under light text reads as an embossed relief.
+    ctx.fillStyle = "#6a6a6a";
+    ctx.fillText(initials, n / 2 + 3, n / 2 + 5);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(initials, n / 2, n / 2 + 2);
+    tex.needsUpdate = true;
+  };
+  const logo = new Image();
+  if (wedding.sealLogo) {
+    logo.onload = draw;
+    logo.src = wedding.sealLogo;
+  }
+  draw();
+  document.fonts?.load('italic 500 100px "Cormorant Garamond"').then(draw).catch(() => {});
   return tex;
 }

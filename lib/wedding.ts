@@ -3,6 +3,8 @@ type Person = { name: string; note?: string; image?: string };
 
 export const wedding = {
   couple: { a: "Elijah", b: "Jennifer" },
+  // Couple logo pressed into the wax seal, e.g. "/logo.png" under public/ (dark artwork on a transparent background). Empty = initials.
+  sealLogo: "" as string,
   // ISO date-time of the ceremony (local time of the venue).
   date: "2027-06-12T15:00:00+08:00",
   venue: {
