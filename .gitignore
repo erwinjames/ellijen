@@ -42,3 +42,5 @@ next-env.d.ts
 
 # keep the env template
 !.env.local.example
+# Firebase web config is public (NEXT_PUBLIC_, ships in the bundle) — committed so Vercel builds get it
+!.env.local
