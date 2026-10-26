@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState<Settings | null>(null);
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const [wasReset, setWasReset] = useState(false);
   const [error, setError] = useState("");
   const dirty = saved !== null && s !== saved;
 
@@ -34,7 +35,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!isFirebaseConfigured) return;
-    return onAuthStateChanged(auth(), (u) => (u ? setUser(u) : router.replace("/admin/login")));
+    return onAuthStateChanged(auth(), (u) => (u ? setUser(u) : (setUser(null), router.replace("/admin/login"))));
   }, [router]);
 
   // Load once, then stop listening so a remote edit cannot overwrite what is being typed.
@@ -63,8 +64,10 @@ export default function SettingsPage() {
     setSaving(true);
     setError("");
     try {
-      await saveSettings(snap);
-      setSaved(snap);
+      const n = await saveSettings(snap);
+      setSaved(n);
+      setS((cur) => (cur === snap ? n : cur));
+      setWasReset(JSON.stringify(n) !== JSON.stringify(snap));
       setJustSaved(true);
     } catch (err) {
       setError((err as Error).message);
@@ -307,7 +310,8 @@ export default function SettingsPage() {
           <button disabled={saving || !dirty} className="cursor-pointer rounded-full bg-gold px-8 py-3 text-sm uppercase tracking-[0.3em] text-ink transition hover:brightness-110 disabled:cursor-default disabled:opacity-60">
             {saving ? "Saving…" : "Save"}
           </button>
-          {justSaved && !dirty && <span className="text-sm text-emerald-300">Saved. The public site updates instantly.</span>}
+          {justSaved && !dirty && !wasReset && <span className="text-sm text-emerald-300">Saved. The public site updates instantly.</span>}
+          {justSaved && !dirty && wasReset && <span role="status" className="text-sm text-gold">Saved. Some entries weren&apos;t valid (links must start with https://) and were reset — please check them.</span>}
           {dirty && !saving && <span className="text-sm text-cream/50">Unsaved changes</span>}
           {error && <p role="alert" className="text-sm text-rose">{error}</p>}
         </div>

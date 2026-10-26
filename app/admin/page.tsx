@@ -19,7 +19,7 @@ export default function Admin() {
 
   useEffect(() => {
     if (!isFirebaseConfigured) return;
-    return onAuthStateChanged(auth(), (u) => (u ? setUser(u) : router.replace("/admin/login")));
+    return onAuthStateChanged(auth(), (u) => (u ? setUser(u) : (setUser(null), setRows([]), router.replace("/admin/login"))));
   }, [router]);
 
   useEffect(() => {

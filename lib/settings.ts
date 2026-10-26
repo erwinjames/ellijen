@@ -36,7 +36,11 @@ export const normalize = (raw: unknown) => normalizeWith(raw, defaultSettings);
 
 const ref = () => doc(db(), "settings", "site");
 
-export const saveSettings = (s: Settings) => setDoc(ref(), normalize(s));
+export async function saveSettings(s: Settings) {
+  const n = normalize(s);
+  await setDoc(ref(), n);
+  return n;
+}
 
 export function subscribeSettings(cb: (s: Settings) => void, onError?: (e: Error) => void) {
   if (!isFirebaseConfigured) {

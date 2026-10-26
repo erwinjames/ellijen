@@ -19,8 +19,17 @@ export default function Login() {
     try {
       await signInWithEmailAndPassword(auth(), String(f.get("email")), String(f.get("password")));
       router.replace("/admin");
-    } catch {
-      setError("Invalid email or password.");
+    } catch (err) {
+      const code = (err as { code?: string }).code;
+      setError(
+        ["auth/invalid-credential", "auth/wrong-password", "auth/user-not-found", "auth/invalid-email"].includes(code ?? "")
+          ? "Invalid email or password."
+          : code === "auth/too-many-requests"
+            ? "Too many attempts. Please wait a few minutes and try again."
+            : code === "auth/network-request-failed"
+              ? "Can't reach the server. Check your connection."
+              : "Sign-in failed. Please try again.",
+      );
       setBusy(false);
     }
   }
