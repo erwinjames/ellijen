@@ -31,9 +31,16 @@ export default function Hero({ opening, opened, onOpen }: { opening: boolean; op
 
   const chars = (s: string) => (
     <span className="inline-block">
-      {s.split("").map((c, i) => (
-        <span key={i} className="hero-char inline-block">
-          {c}
+      {s.split(" ").map((w, wi) => (
+        <span key={wi}>
+          {wi > 0 && " "}
+          <span className="inline-block whitespace-nowrap">
+            {w.split("").map((c, i) => (
+              <span key={i} className="hero-char inline-block">
+                {c}
+              </span>
+            ))}
+          </span>
         </span>
       ))}
     </span>

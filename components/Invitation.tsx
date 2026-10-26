@@ -111,7 +111,10 @@ export default function Invitation() {
     document.documentElement.style.overflow = opened ? "" : "hidden";
     document.querySelector("main")?.toggleAttribute("inert", !opened);
     if (opened) ScrollTrigger.refresh();
-    return () => void (document.documentElement.style.overflow = "");
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.querySelector("main")?.removeAttribute("inert");
+    };
   }, [opened]);
 
   return (
