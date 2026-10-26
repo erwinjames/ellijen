@@ -176,7 +176,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
 
   // --- dancing couple behind the rings, shown only in the RSVP chapter ---------------------------
   const couple = buildDancers(reduced);
-  couple.group.position.set(0, -1.3, -2.6);
+  couple.group.position.set(0, -0.5, -2.6); // half-size couple centred between the parted rings
   scene.add(couple.group);
   disposables.push(couple);
   let dance = 0;

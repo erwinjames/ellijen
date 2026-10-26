@@ -377,9 +377,9 @@ export default function Home() {
 
         {/* ---- RSVP ---- */}
         {/* top gap: the 3D couple dances here before the form scrolls over them */}
-        <div data-chapter="rsvp" className="pt-[46vh]">
+        <div id="rsvp" data-chapter="rsvp" className="pt-[46vh]">
           <Reveal className="mx-auto max-w-xl px-6 py-24">
-            <div id="rsvp" className="scroll-mt-24 text-center">
+            <div className="text-center">
               <Title eyebrow="RSVP">Will you join us?</Title>
               <p data-reveal className="mt-4 mb-10 text-cream/60">
                 Kindly reply by {deadline}.
