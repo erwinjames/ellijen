@@ -3,7 +3,7 @@ service firebase.storage {
   match /b/{bucket}/o {
     // Site photos uploaded from admin → Settings: anyone can view, only signed-in admins can add images.
     match /site/{file} {
-      allow read: if true;
+      allow get: if true;
       allow create: if request.auth != null
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/(jpeg|png)');

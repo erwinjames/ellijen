@@ -17,3 +17,9 @@ test("toCsv escapes quotes and commas", () => {
   assert.equal(lines[1], '"Ann ""A""","a@x.com","yes","2","hi, there","1970-01-01T00:00:00.000Z"');
   assert.equal(lines[2], '"Bob","","no","0","",""');
 });
+
+test("toCsv neutralises spreadsheet formulas", () => {
+  const cell = (name: string) => toCsv([{ ...rows[1], name }]).split("\n")[1].split(",")[0];
+  for (const f of ["=HYPERLINK(\"x\")", "+1", "-2", "@SUM(A1)", "\t=x", "\r=x"]) assert.equal(cell(f), `"'${f.replace(/"/g, '""')}"`, f);
+  for (const ok of ["Ann", ""]) assert.equal(cell(ok), `"${ok}"`);
+});

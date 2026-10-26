@@ -7,14 +7,7 @@ import Photo from "@/components/Photo";
 import Reveal from "@/components/Reveal";
 import RsvpForm from "@/components/RsvpForm";
 import { useSettings } from "@/lib/settings";
-const initials = (name: string) =>
-  name
-    .replace(/^(Mr\.|Mrs\.|Ms\.)\s*/g, "")
-    .split(/\s+|&/)
-    .filter((w) => w && /^[A-Z]/.test(w))
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("");
+import { initials } from "@/lib/settings-utils";
 
 function Title({
   eyebrow,

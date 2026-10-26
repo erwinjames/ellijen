@@ -19,7 +19,8 @@ export function summarize(rows: Rsvp[]) {
   };
 }
 
-const csvCell = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+// Leading = + - @ TAB CR would run as a formula in Excel/Sheets; a leading ' defuses it.
+const csvCell = (v: unknown) => `"${String(typeof v === "string" && /^[=+\-@\t\r]/.test(v) ? "'" + v : (v ?? "")).replace(/"/g, '""')}"`;
 
 export function toCsv(rows: Rsvp[]) {
   const head = ["name", "email", "attending", "extra_guests", "message", "submitted"];

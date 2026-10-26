@@ -32,8 +32,9 @@ const HEX = /^#[0-9a-f]{6}$/i;
 const LINKISH = /(url|image|logo|song|gallery)$/i;
 const safeLink = (v: string) =>
   v === "" ||
+  (!v.includes("\\") &&
   ((v.startsWith("https://") || (v.startsWith("/") && !v.startsWith("//"))) && v.length <= 2000) ||
-  (/^data:image\/(png|jpeg|webp);base64,[\w+/=]+$/.test(v) && v.length <= 300_000);
+  (/^data:image\/(png|jpeg|webp);base64,[\w+/=]+$/.test(v) && v.length <= 300_000));
 
 // Coerces raw Firestore data into the shape of `d`, field by field, falling back to `d` wherever it does not fit.
 // Array items are checked against the default's first item. ponytail: one generic length cap per string/array.
@@ -99,3 +100,10 @@ export function lighten(h: string, amt: number) {
   const c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(v + (255 - v) * amt));
   return "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("");
 }
+
+const HONORIFIC = /\b(mr|mrs|ms|dr)\b\.?/gi;
+export const initials = (name: string) => {
+  const t = name.trim();
+  const w = t.replace(HONORIFIC, " ").split(/[\s&]+/).filter((x) => /^\p{L}/u.test(x));
+  return (w.slice(0, 2).map((x) => x[0]).join("") || t[0] || "").toUpperCase();
+};

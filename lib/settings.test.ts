@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { contrast, lighten, normalize, THEMES, youtubeId, type Settings } from "./settings-utils.ts";
+import { contrast, initials, lighten, normalize, THEMES, youtubeId, type Settings } from "./settings-utils.ts";
 
 const d: Settings = {
   theme: { gold: "#e8c069", rose: "#f58fb0", ink: "#0a0612", cream: "#f5ead9" },
@@ -93,4 +93,15 @@ test("every preset theme is readable: text 4.5:1, accent 3:1 on the background",
 
 test("old documents without a text colour get the default", () => {
   assert.equal(normalize({ theme: { gold: "#111111", rose: "#222222", ink: "#333333" } }, d).theme.cream, d.theme.cream);
+});
+
+test("normalize rejects backslash and non-https links", () => {
+  for (const bad of ["/\\evil.com", "https://x/\\y", "http://x", "data:text/html,x"]) assert.equal(normalize({ song: bad }, d).song, d.song, bad);
+  assert.equal(normalize({ song: "/gallery/1.jpg" }, d).song, "/gallery/1.jpg");
+  assert.equal(normalize({ song: "https://cdn/x.jpg" }, d).song, "https://cdn/x.jpg");
+});
+
+test("initials", () => {
+  const cases: [string, string][] = [["Mr. & Mrs. Delgado", "D"], ["Ana Reyes", "AR"], ["juan dela cruz", "JD"], ["Dr. Jose Rizal", "JR"], ["李", "李"], ["", ""]];
+  for (const [n, want] of cases) assert.equal(initials(n), want, n);
 });
