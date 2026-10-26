@@ -11,7 +11,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { GradeShader, backdropFragment, backdropVertex, particleFragment, particleVertex } from "./shaders";
 import { noiseTexture, petalTexture, sparkleTexture } from "./textures";
 import { buildEnvelope, type Card } from "./envelope";
-import { buildDancers, CUT_LOW } from "./dancers";
+import { buildDancers, CUT_LOW, TOP } from "./dancers";
 import { wedding } from "@/lib/wedding";
 
 export type SceneHandle = {
@@ -346,11 +346,11 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
     // Portrait: hold the horizontal field of view instead, so the envelope and rings stay fully in frame on phones.
     camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(FOV / 2)) / Math.min(1, camera.aspect)));
     camera.updateProjectionMatrix();
-    // That wider portrait view shrinks everything; the rings survive it, the couple needs a boost (1.5 on desktop, ~2.7 on a phone).
-    // Their visible waist-up half (CUT_LOW to ~1.85) is centred on the rings (y 0.2).
-    const s = 1.5 / Math.min(1, camera.aspect) ** 0.75;
+    // That wider portrait view shrinks everything; the rings survive it, the couple is scaled back up in full (1.2 on
+    // desktop, ~2.6 on a phone). Their visible upper part (CUT_LOW to TOP) is centred on the rings (y 0.2).
+    const s = 1.2 / Math.min(1, camera.aspect);
     couple.group.scale.setScalar(s);
-    couple.group.position.y = 0.2 - ((CUT_LOW + 1.85) / 2) * s;
+    couple.group.position.y = 0.2 - ((CUT_LOW + TOP) / 2) * s;
     renderer.setSize(w, h, false);
     composer.setSize(w, h);
     bloom.resolution.set(w / 2, h / 2);
