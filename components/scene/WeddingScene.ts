@@ -40,7 +40,7 @@ type Phase = "intro" | "opening" | "story";
 
 export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): SceneHandle {
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const mobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+  const mobile = window.matchMedia("(pointer: coarse)").matches;
   const disposables: { dispose(): void }[] = [];
   let phase: Phase = "intro";
 
@@ -52,7 +52,6 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
   renderer.toneMappingExposure = 1.0;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
-  disposables.push(renderer);
 
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x0a0612, 0.045);
@@ -64,7 +63,8 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
   camera.position.set(cam.x, cam.y, cam.z);
 
   const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  const roomEnv = new RoomEnvironment();
+  scene.environment = pmrem.fromScene(roomEnv, 0.04).texture;
   pmrem.dispose();
 
   // --- lights -----------------------------------------------------------------------
@@ -148,12 +148,16 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
   key.target = rings;
   disposables.push(torus, gold, ringB.material as THREE.Material, rough);
 
+  let disposed = false;
+  let model: THREE.Object3D | undefined;
   if (wedding.ringsModelUrl) {
     const manager = new THREE.LoadingManager();
     manager.onProgress = (_url, loaded, total) => opts.onProgress?.(loaded / total);
     manager.onLoad = () => opts.onReady?.();
     manager.onError = () => opts.onReady?.();
     new GLTFLoader(manager).load(wedding.ringsModelUrl, (gltf) => {
+      if (disposed) return;
+      model = gltf.scene;
       const box = new THREE.Box3().setFromObject(gltf.scene);
       const size = box.getSize(new THREE.Vector3());
       gltf.scene.position.sub(box.getCenter(new THREE.Vector3()));
@@ -300,9 +304,11 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
   const mouse = new THREE.Vector2(0, 0);
   const parallax = new THREE.Vector2(0, 0);
   let hovered = false;
+  let moved = false; // no hover raycast until a real pointer exists (touch-only devices never move one)
   let spinning = false;
 
   const onMove = (e: PointerEvent) => {
+    moved = true;
     mouse.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
   };
   const onClick = (e: MouseEvent) => {
@@ -361,7 +367,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
     rim.intensity = (18 + Math.cos(t * 1.4) * 5) * lightScale.v;
 
     parallax.lerp(mouse, 0.04);
-    raycaster.setFromCamera(mouse, camera);
+    if (moved) raycaster.setFromCamera(mouse, camera);
 
     if (phase === "story") {
       for (const k of Object.keys(story) as (keyof ChapterState)[]) story[k] = THREE.MathUtils.damp(story[k], chapter[k], 2.5, dt);
@@ -413,7 +419,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
 
     // hover: envelope in intro, rings in story
     const target = phase === "intro" ? env.group : phase === "story" ? rings : null;
-    const hit = !!target && raycaster.intersectObject(target, true).length > 0;
+    const hit = moved && !!target && raycaster.intersectObject(target, true).length > 0;
     if (hit !== hovered) {
       hovered = hit;
       document.body.style.cursor = hit ? "pointer" : "";
@@ -436,6 +442,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
       backdropMat.uniforms.uBottom.value.copy(bg).multiplyScalar(0.5);
       backdropMat.uniforms.uTop.value.copy(bg).lerp(new THREE.Color(0x5a3d7a), 0.15); // the default dusk-purple sky
       // ponytail: a light sky would bloom white, so lift the threshold by its brightness; tune per theme if it looks off.
+      grade.uniforms.uVignette.value = 0.75 * (1 - (0.2126 * bg.r + 0.7152 * bg.g + 0.0722 * bg.b)); // light themes: no black corners
       bloom.threshold = 0.9 + 0.2126 * bg.r + 0.7152 * bg.g + 0.0722 * bg.b;
       for (const m of ringMats) m.color.copy(g);
       pMat.uniforms.uColorA.value.copy(g).lerp(new THREE.Color(0xffffff), 0.25);
@@ -447,6 +454,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
     setCard: env.setCard,
     open,
     dispose() {
+      disposed = true;
       renderer.setAnimationLoop(null);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("click", onClick);
@@ -455,7 +463,19 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
       openTl?.kill();
       gsap.killTweensOf([rings.rotation, rings.scale, bloom, ringMats, env.group.scale, cam, lightScale]);
       scene.environment?.dispose();
+      roomEnv.dispose();
+      key.shadow.dispose();
+      model?.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh) return;
+        m.geometry.dispose();
+        for (const mat of [m.material].flat() as THREE.MeshStandardMaterial[]) {
+          for (const v of Object.values(mat)) if ((v as THREE.Texture | null)?.isTexture) (v as THREE.Texture).dispose();
+          mat.dispose();
+        }
+      });
       disposables.forEach((d) => d.dispose());
+      renderer.dispose(); // last: it clears three's per-object GPU bookkeeping, so anything disposed after it would leak
     },
   };
 }

@@ -16,6 +16,7 @@ export default function Invitation() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const handleRef = useRef<SceneHandle | null>(null);
   const playerRef = useRef<Player | null>(null);
+  const wantMusic = useRef(false); // survives the player being recreated when the song setting arrives
   const [ready, setReady] = useState(false);
   const [opening, setOpening] = useState(false);
   const [opened, setOpened] = useState(false);
@@ -34,6 +35,7 @@ export default function Invitation() {
   useEffect(() => {
     const p = createPlayer(song, setPlaying);
     playerRef.current = p;
+    if (wantMusic.current) p.play();
     return () => {
       p.dispose();
       playerRef.current = null;
@@ -66,6 +68,7 @@ export default function Invitation() {
           onReady: () => setReady(true),
           onOpenStart: () => {
             setOpening(true);
+            wantMusic.current = true;
             playerRef.current?.play();
           },
           onOpened: () => setOpened(true),
@@ -132,7 +135,12 @@ export default function Invitation() {
       </div>
       <Hero opening={opening} opened={opened} onOpen={() => handleRef.current?.open()} />
       {opened && <Nav />}
-      {opened && <Vinyl playing={playing} onToggle={() => playerRef.current?.toggle()} />}
+      {opened && <Vinyl playing={playing} onToggle={() => {
+        const p = playerRef.current;
+        if (!p) return;
+        wantMusic.current = !p.playing;
+        p.toggle();
+      }} />}
     </>
   );
 }

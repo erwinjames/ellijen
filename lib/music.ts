@@ -36,6 +36,10 @@ function youtube(id: string, onChange: (p: boolean) => void): Player {
   document.body.appendChild(host);
   let yt: YTPlayer | undefined;
   let wanted = false;
+  const blocked = () => {
+    wanted = false;
+    onChange((p.playing = false));
+  };
   loadYouTube().then((YT) => {
     if (!host.isConnected) return; // disposed while the API loaded
     yt = new YT.Player(mount, {
@@ -48,6 +52,8 @@ function youtube(id: string, onChange: (p: boolean) => void): Player {
         },
         // 1 = playing, 2 = paused, 0 = ended (loop restarts it).
         onStateChange: (e: { data: number }) => (e.data === 1 || e.data === 2) && onChange((p.playing = e.data === 1)),
+        onError: blocked,
+        onAutoplayBlocked: blocked,
       },
     });
   });
@@ -62,7 +68,7 @@ function youtube(id: string, onChange: (p: boolean) => void): Player {
       yt?.pauseVideo();
       onChange((p.playing = false));
     },
-    toggle: () => (p.playing || wanted ? p.pause() : p.play()),
+    toggle: () => (p.playing ? p.pause() : p.play()),
     dispose() {
       wanted = false;
       yt?.destroy();
@@ -76,17 +82,23 @@ function fileplayer(url: string, onChange: (p: boolean) => void): Player {
   const audio = new Audio(url);
   audio.loop = true;
   audio.volume = 0.6;
+  let disposed = false;
+  const set = (v: boolean) => !disposed && p.playing !== v && onChange((p.playing = v));
+  audio.onplaying = () => set(true);
+  audio.onpause = () => set(false);
   const p: Player = {
     playing: false,
     play() {
-      audio.play().then(() => onChange((p.playing = true))).catch(() => {});
+      audio.play().catch(() => {});
     },
-    pause() {
-      audio.pause();
-      onChange((p.playing = false));
-    },
+    pause: () => audio.pause(),
     toggle: () => (p.playing ? p.pause() : p.play()),
-    dispose: () => audio.pause(),
+    dispose() {
+      disposed = true;
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+    },
   };
   return p;
 }
@@ -173,6 +185,7 @@ function musicBox(onChange: (p: boolean) => void): Player {
         crackle();
         nextTime = ctx.currentTime + 0.1;
       }
+      nextTime = Math.max(nextTime, ctx.currentTime + 0.1);
       ctx.resume();
       master.gain.cancelScheduledValues(ctx.currentTime);
       master.gain.linearRampToValueAtTime(0.22, ctx.currentTime + 1.5);
