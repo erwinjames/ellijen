@@ -11,7 +11,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { GradeShader, backdropFragment, backdropVertex, particleFragment, particleVertex } from "./shaders";
 import { noiseTexture, petalTexture, sparkleTexture } from "./textures";
 import { buildEnvelope, type Card } from "./envelope";
-import { buildDancers } from "./dancers";
+import { buildDancers, CUT_LOW } from "./dancers";
 import { wedding } from "@/lib/wedding";
 
 export type SceneHandle = {
@@ -174,9 +174,9 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
     opts.onReady?.();
   }
 
-  // --- dancing couple behind the rings, shown only in the RSVP chapter ---------------------------
+  // --- dancing couple just behind the rings, through the whole story ---------------------------------
   const couple = buildDancers(reduced);
-  couple.group.position.set(0, -0.5, -2.6); // half-size couple centred between the parted rings
+  couple.group.position.z = -2.6; // just behind the rings; x/y and size are set in resize()
   scene.add(couple.group);
   disposables.push(couple);
   let dance = 0;
@@ -267,7 +267,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
     gallery: { x: 0, y: 5, z: 2.5, lookX: 0, lookY: 0.2, spread: 0, flat: 1, rise: 0, bloom: 0.25, warm: 0.2 },
     faq: { x: -2, y: 2.2, z: 9, lookX: -2, lookY: 1.2, spread: 2.4, flat: 0, rise: 1, bloom: 0.3, warm: 0.5 },
     travel: { x: 0, y: 2.6, z: 8, lookX: 0, lookY: 2.6, spread: 0, flat: 0, rise: 0, bloom: 0.35, warm: 0.6 },
-    rsvp: { x: 0, y: 0.8, z: 7.5, lookX: 0, lookY: -0.8, spread: 1.2, flat: 0, rise: 0, bloom: 0.5, warm: 1 }, // rings part, couple dances between them in the top half
+    rsvp: { x: 0, y: 0.8, z: 7.5, lookX: 0, lookY: -0.8, spread: 1.2, flat: 0, rise: 0, bloom: 0.5, warm: 1 }, // rings part around the couple, top half of the screen
   };
   const story: ChapterState = { ...CHAPTERS.hero };
   let chapter: ChapterState = CHAPTERS.hero;
@@ -346,6 +346,11 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
     // Portrait: hold the horizontal field of view instead, so the envelope and rings stay fully in frame on phones.
     camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(FOV / 2)) / Math.min(1, camera.aspect)));
     camera.updateProjectionMatrix();
+    // That wider portrait view shrinks everything; the rings survive it, the couple needs a boost (1.5 on desktop, ~2.7 on a phone).
+    // Their visible waist-up half (CUT_LOW to ~1.85) is centred on the rings (y 0.2).
+    const s = 1.5 / Math.min(1, camera.aspect) ** 0.75;
+    couple.group.scale.setScalar(s);
+    couple.group.position.y = 0.2 - ((CUT_LOW + 1.85) / 2) * s;
     renderer.setSize(w, h, false);
     composer.setSize(w, h);
     bloom.resolution.set(w / 2, h / 2);
@@ -400,7 +405,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
       env.group.rotation.x = -parallax.y * 0.2;
     }
 
-    dance = THREE.MathUtils.damp(dance, phase === "story" && chapter === CHAPTERS.rsvp ? 1 : 0, 3, dt);
+    dance = THREE.MathUtils.damp(dance, phase === "story" ? 1 : 0, 3, dt);
     couple.update(t, dance);
 
     // rings idle + story spread/flatten

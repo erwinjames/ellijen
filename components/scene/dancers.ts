@@ -1,7 +1,10 @@
 import * as THREE from "three";
 
 // Bride & groom as smooth articulated mannequins (lathed torsos, tapered two-part limbs, round joints) in a waltz hold.
-// Feet at y=0, about 1.8 tall before the display scale; update() dances them.
+// Modelled full height (feet at y=0, ~1.8 tall) but shown waist-up: every material fades out between CUT_LOW and CUT_HIGH.
+export const CUT_LOW = 0.95; // waist: fully faded out
+export const CUT_HIGH = 1.25; // chest: fully shown
+
 export function buildDancers(reduced: boolean) {
   const geos: THREE.BufferGeometry[] = [];
   const skin = new THREE.MeshPhysicalMaterial({ color: 0xe6bd9b, roughness: 0.55, sheen: 0.4, sheenColor: new THREE.Color(0xffc9b0) });
@@ -12,9 +15,20 @@ export function buildDancers(reduced: boolean) {
   const gown = new THREE.MeshPhysicalMaterial({ color: 0xfaf5ee, roughness: 0.55, sheen: 1, sheenRoughness: 0.35, sheenColor: new THREE.Color(0xffd6e2), side: THREE.DoubleSide });
   const veil = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.3, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false });
   const accent = new THREE.MeshStandardMaterial({ color: 0xe8c069, metalness: 0.8, roughness: 0.3 });
-  // Shown see-through so they stay a soft backdrop to the rings; each keeps its own base opacity (the veil is sheerer).
+  // Waist-up cut: heights are in the couple's own units (feet at 0), so the cut follows them as they move and scale.
   const mats = [skin, suit, shoe, hair, shirt, gown, veil, accent];
-  const base = mats.map((m) => ((m.transparent = true), m.opacity));
+  const base = mats.map((m) => ((m.transparent = true), m.opacity)); // the veil keeps its sheerness
+  const toLocal = { value: new THREE.Matrix4() };
+  for (const m of mats)
+    m.onBeforeCompile = (s) => {
+      s.uniforms.uToLocal = toLocal;
+      s.vertexShader = s.vertexShader
+        .replace("#include <common>", "#include <common>\nuniform mat4 uToLocal;\nvarying float vCutY;")
+        .replace("#include <project_vertex>", "#include <project_vertex>\nvCutY = (uToLocal * modelMatrix * vec4(transformed, 1.0)).y;");
+      s.fragmentShader = s.fragmentShader
+        .replace("#include <common>", "#include <common>\nvarying float vCutY;")
+        .replace("#include <dithering_fragment>", `#include <dithering_fragment>\nfloat cut = smoothstep(${CUT_LOW.toFixed(2)}, ${CUT_HIGH.toFixed(2)}, vCutY);\nif (cut < 0.01) discard; // no depth from the hidden half\ngl_FragColor.a *= cut;`);
+    };
 
   const mesh = (geo: THREE.BufferGeometry, mat: THREE.Material, x = 0, y = 0, z = 0) => {
     geos.push(geo);
@@ -131,16 +145,17 @@ export function buildDancers(reduced: boolean) {
   const pair = new THREE.Group();
   pair.add(groom, bride);
   const group = new THREE.Group();
-  group.add(pair, mesh(new THREE.CylinderGeometry(0.75, 0.8, 0.05, 48), accent, 0, -0.03)); // gold dance floor, cake-topper style
+  group.add(pair);
   group.visible = false;
-  group.scale.setScalar(0.8);
 
   return {
     group,
     /** `show` 0..1 fades the couple in/out; t is elapsed seconds. */
     update(t: number, show: number) {
       group.visible = show > 0.01;
-      mats.forEach((m, i) => (m.opacity = base[i] * show * 0.6));
+      mats.forEach((m, i) => (m.opacity = base[i] * show));
+      group.updateMatrixWorld();
+      toLocal.value.copy(group.matrixWorld).invert();
       if (!group.visible || reduced) return;
       // Waltz: one bar of 1-2-3 every ~1.2 s, down on the 1 and rising through 2-3, turning as they travel a small circle.
       const bar = ((t / 1.2) % 1) * Math.PI * 2;
