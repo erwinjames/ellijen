@@ -177,7 +177,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
   // --- dancing couple just behind the rings, through the whole story ---------------------------------
   const couple = buildDancers(reduced);
   couple.group.position.z = -2.6; // just behind the rings; x/y and size are set in resize()
-  scene.add(couple.group);
+  if (wedding.showDancers) scene.add(couple.group);
   disposables.push(couple);
   let dance = 0;
 

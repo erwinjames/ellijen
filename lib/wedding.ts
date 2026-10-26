@@ -110,6 +110,8 @@ export const wedding = {
   maxGuestsPerRsvp: 5,
   // Optional: path under public/ to a GLB that replaces the procedural rings, e.g. "/models/rings.glb".
   ringsModelUrl: "",
+  // The kitten bride & groom dancing behind the rings (components/scene/dancers.ts). Off for now; true shows them.
+  showDancers: false,
   // Optional: path under public/ to the song, e.g. "/audio/song.mp3". Empty = built-in music-box tune.
   songUrl: "",
 };
