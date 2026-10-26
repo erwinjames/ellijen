@@ -19,7 +19,7 @@ export default function Vinyl({ playing, onToggle }: { playing: boolean; onToggl
       className="group fixed bottom-6 right-6 z-40 flex items-center gap-3 rounded-full bg-ink-2/70 p-2 backdrop-blur sm:pr-4"
     >
       <span
-        className="relative block size-14 rounded-full shadow-[0_0_20px_rgba(232,192,105,0.25)] animate-spin"
+        className="relative block size-14 rounded-full shadow-[0_0_20px_color-mix(in_srgb,var(--color-gold)_25%,transparent)] animate-spin motion-reduce:animate-none"
         style={{
           animationDuration: "3s",
           animationPlayState: playing ? "running" : "paused",

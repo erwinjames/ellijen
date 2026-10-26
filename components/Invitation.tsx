@@ -86,6 +86,11 @@ export default function Invitation() {
         setReady(true);
         setOpened(true);
       }
+    }).catch((err) => {
+      if (cancelled) return;
+      console.warn("3D scene unavailable", err);
+      setReady(true);
+      setOpened(true);
     });
 
     return () => {
@@ -104,6 +109,7 @@ export default function Invitation() {
   // Scroll stays locked until the envelope has been opened.
   useEffect(() => {
     document.documentElement.style.overflow = opened ? "" : "hidden";
+    document.querySelector("main")?.toggleAttribute("inert", !opened);
     if (opened) ScrollTrigger.refresh();
     return () => void (document.documentElement.style.overflow = "");
   }, [opened]);

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
+import { useSettings } from "@/lib/settings";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 // Scroll-triggered entrance. Children opt in with data-reveal="up|left|right|flip|pop" (default up).
@@ -15,6 +16,7 @@ const FROM: Record<string, gsap.TweenVars> = {
 
 export default function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  const settings = useSettings(); // re-collect [data-reveal] items when Firestore adds content
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -26,6 +28,10 @@ export default function Reveal({ children, className = "" }: { children: React.R
       groups.set(k, [...(groups.get(k) ?? []), it]);
     }
     if (!groups.size) groups.set("up", [el]);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      gsap.set([...groups.values()].flat(), { opacity: 1 });
+      return;
+    }
     const tweens = [...groups].map(([k, targets]) =>
       gsap.fromTo(
         targets,
@@ -34,7 +40,7 @@ export default function Reveal({ children, className = "" }: { children: React.R
       ),
     );
     return () => tweens.forEach((t) => (t.scrollTrigger?.kill(), t.kill()));
-  }, []);
+  }, [settings]);
 
   return (
     <div ref={ref} className={className}>

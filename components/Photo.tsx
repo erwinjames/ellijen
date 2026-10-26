@@ -28,7 +28,7 @@ export default function Photo({
   const missing = !src || failed === src;
 
   useEffect(() => {
-    if (!parallax) return;
+    if (!parallax || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     gsap.registerPlugin(ScrollTrigger);
     const tween = gsap.fromTo(
       img.current,
@@ -61,8 +61,8 @@ export default function Photo({
             <path d="M21 16l-5.5-5.5L7 19" />
           </svg>
           {label !== "" && <p className="font-serif text-lg italic leading-tight text-cream/80 sm:text-2xl">{label ?? alt}</p>}
-          <p className="max-w-full break-all px-2 text-[10px] uppercase tracking-[0.15em] text-cream/50">
-            {src.startsWith("/") ? <>add <code className="text-gold/80">public{src}</code></> : "photo coming soon"}
+          <p className="max-w-full break-all px-2 text-[10px] uppercase tracking-[0.15em] text-cream/70">
+            {src.startsWith("/") && process.env.NODE_ENV !== "production" ? <>add <code className="text-gold/80">public{src}</code></> : "photo coming soon"}
           </p>
         </div>
       )}

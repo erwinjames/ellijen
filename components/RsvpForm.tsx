@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { submitRsvp } from "@/lib/rsvp";
 import { useSettings } from "@/lib/settings";
@@ -13,7 +13,12 @@ export default function RsvpForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
+  const doneRef = useRef<HTMLDivElement>(null);
   const { rsvpDeadline } = useSettings();
+
+  useEffect(() => {
+    if (status === "done") doneRef.current?.focus();
+  }, [status]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -24,13 +29,14 @@ export default function RsvpForm() {
     setError("");
     setStatus("sending");
     try {
-      await submitRsvp({
+      // addDoc waits for a server ack, so it never settles offline.
+      await Promise.race([submitRsvp({
         name: name.slice(0, 120),
         email: String(f.get("email") ?? "").trim().slice(0, 200),
         attending,
-        guests: attending ? Math.min(wedding.maxGuestsPerRsvp, Math.max(0, Number(f.get("guests") ?? 0))) : 0,
+        guests: attending ? Math.min(wedding.maxGuestsPerRsvp, Math.max(0, Math.round(Number(f.get("guests")) || 0))) : 0,
         message: String(f.get("message") ?? "").trim().slice(0, 1000),
-      });
+      }), new Promise<never>((_, rej) => setTimeout(() => rej(new Error("RSVP timed out")), 15000))]);
       gsap.to(formRef.current, { opacity: 0, y: -20, duration: 0.5, onComplete: () => setStatus("done") });
     } catch (err) {
       console.error(err);
@@ -41,7 +47,7 @@ export default function RsvpForm() {
 
   if (status === "done") {
     return (
-      <div className="rounded-3xl border border-gold/40 bg-ink-2/70 p-10 text-center backdrop-blur">
+      <div ref={doneRef} role="status" tabIndex={-1} className="rounded-3xl border border-gold/40 bg-ink-2/70 p-10 text-center backdrop-blur">
         <p className="font-serif text-4xl italic text-gold">{attending ? "We can't wait to see you!" : "We'll miss you."}</p>
         <p className="mt-4 text-cream/70">{attending ? "Your seat is saved." : "Thank you for letting us know."}</p>
       </div>
@@ -97,7 +103,7 @@ export default function RsvpForm() {
       <button type="submit" disabled={status === "sending"} className="w-full rounded-full bg-gold py-4 text-sm uppercase tracking-[0.3em] text-ink transition hover:brightness-110 disabled:opacity-60">
         {status === "sending" ? "Sending…" : "Send RSVP"}
       </button>
-      <p className="text-center text-xs text-cream/50">Kindly reply by {new Date(rsvpDeadline).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" })}.</p>
+      <p className="text-center text-xs text-cream/70">Kindly reply by {new Date(rsvpDeadline).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" })}.</p>
     </form>
   );
 }

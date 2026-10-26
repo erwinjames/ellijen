@@ -10,8 +10,10 @@
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
 }
 
-html {
-  scroll-behavior: smooth;
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {

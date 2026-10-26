@@ -146,15 +146,21 @@ export default function Home() {
                 <p className="mt-2 text-cream/60">{b}</p>
               </div>
             ))}
-            <a
-              data-reveal
-              href={wedding.venue.mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-center text-sm uppercase tracking-[0.3em] text-gold underline-offset-8 hover:underline sm:col-span-3"
-            >
-              {wedding.venue.address} · open in maps
-            </a>
+            {wedding.venue.mapsUrl ? (
+              <a
+                data-reveal
+                href={wedding.venue.mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-center text-sm uppercase tracking-[0.3em] text-gold underline-offset-8 hover:underline sm:col-span-3"
+              >
+                {wedding.venue.address} · open in maps
+              </a>
+            ) : (
+              <p data-reveal className="text-center text-sm uppercase tracking-[0.3em] text-gold sm:col-span-3">
+                {wedding.venue.address}
+              </p>
+            )}
           </Reveal>
 
           <div data-chapter="program">
@@ -172,7 +178,7 @@ export default function Home() {
                     data-reveal="left"
                     className="relative pb-10 last:pb-0"
                   >
-                    <span className="absolute -left-[2.55rem] top-1.5 size-3 rounded-full bg-gold shadow-[0_0_14px_3px_rgba(232,192,105,0.5)]" />
+                    <span className="absolute -left-[2.55rem] top-1.5 size-3 rounded-full bg-gold shadow-[0_0_14px_3px_color-mix(in_srgb,var(--color-gold)_50%,transparent)]" />
                     <p className="font-serif text-2xl text-gold">{p.time}</p>
                     <p className="mt-1 font-serif text-2xl">{p.title}</p>
                     <p className="mt-1 text-cream/60">{p.note}</p>
@@ -237,7 +243,7 @@ export default function Home() {
                         {p.name}
                       </p>
                       {p.note && (
-                        <p className="mt-1 text-xs uppercase tracking-[0.3em] text-cream/50">
+                        <p className="mt-1 text-xs uppercase tracking-[0.3em] text-cream/70">
                           {p.note}
                         </p>
                       )}
@@ -350,14 +356,18 @@ export default function Home() {
             <ul className="mt-8 space-y-4">
               {wedding.travel.stays.map((h, i) => (
                 <li key={i} data-reveal="left">
-                  <a
-                    href={h.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-serif text-2xl text-gold underline-offset-6 hover:underline"
-                  >
-                    {h.name}
-                  </a>
+                  {h.url ? (
+                    <a
+                      href={h.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-serif text-2xl text-gold underline-offset-6 hover:underline"
+                    >
+                      {h.name}
+                    </a>
+                  ) : (
+                    <p className="font-serif text-2xl text-gold">{h.name}</p>
+                  )}
                   <p className="text-sm text-cream/60">{h.note}</p>
                 </li>
               ))}
@@ -380,7 +390,7 @@ export default function Home() {
           </Reveal>
         </div>
 
-        <footer className="py-16 text-center font-serif text-lg italic text-cream/40">
+        <footer className="py-16 text-center font-serif text-lg italic text-cream/60">
           {wedding.hashtag} · {wedding.couple.a} &amp; {wedding.couple.b}
         </footer>
       </main>

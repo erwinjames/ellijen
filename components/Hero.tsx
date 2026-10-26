@@ -30,7 +30,7 @@ export default function Hero({ opening, opened, onOpen }: { opening: boolean; op
   }, [opened]);
 
   const chars = (s: string) => (
-    <span className="inline-block whitespace-nowrap">
+    <span className="inline-block">
       {s.split("").map((c, i) => (
         <span key={i} className="hero-char inline-block">
           {c}
