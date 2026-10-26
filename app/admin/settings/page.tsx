@@ -6,21 +6,8 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { auth, isFirebaseConfigured } from "@/lib/firebase";
 import { defaultSettings, logoDataUrl, saveSettings, subscribeSettings, uploadImage, type Settings } from "@/lib/settings";
-import { youtubeId } from "@/lib/settings-utils";
+import { contrast, THEMES, youtubeId } from "@/lib/settings-utils";
 import { at, ColorField, field, ImageField, label, List, Section, Text, type Upd } from "./fields";
-
-const SECTIONS = [
-  ["couple", "Couple & date"],
-  ["story", "Story"],
-  ["program", "Order of the day"],
-  ["entourage", "Entourage"],
-  ["gallery", "Gallery"],
-  ["faq", "Q&A"],
-  ["gifts", "Gifts & travel"],
-  ["theme", "Colours"],
-  ["dress", "Dress code"],
-  ["music", "Music"],
-] as const;
 
 // The site shows times in the venue's zone, so the editor reads and writes Philippine time.
 // ponytail: fixed +08:00; make the offset a setting if a wedding ever happens elsewhere.
@@ -31,9 +18,19 @@ export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [s, setS] = useState<Settings>(defaultSettings);
-  const [loaded, setLoaded] = useState(false);
-  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  // Last version known to be in Firestore; edits replace `s`, so `s !== saved` means unsaved changes.
+  const [saved, setSaved] = useState<Settings | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [error, setError] = useState("");
+  const dirty = saved !== null && s !== saved;
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    addEventListener("beforeunload", warn);
+    return () => removeEventListener("beforeunload", warn);
+  }, [dirty]);
 
   useEffect(() => {
     if (!isFirebaseConfigured) return;
@@ -46,7 +43,7 @@ export default function SettingsPage() {
     const unsub = subscribeSettings(
       (remote) => {
         setS(remote);
-        setLoaded(true);
+        setSaved(remote);
         unsub();
       },
       (e) => setError(e.message),
@@ -56,27 +53,34 @@ export default function SettingsPage() {
 
   const set: Upd<Settings> = (f) => {
     setS(f);
-    setStatus((st) => (st === "saving" ? st : "idle"));
+    setJustSaved(false);
   };
   const k = <K extends keyof Settings>(key: K) => at(set, key);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    setStatus("saving");
+    const snap = s; // edits typed while saving stay unsaved
+    setSaving(true);
     setError("");
     try {
-      await saveSettings(s);
-      setStatus("saved");
+      await saveSettings(snap);
+      setSaved(snap);
+      setJustSaved(true);
     } catch (err) {
-      setStatus("error");
       setError((err as Error).message);
     }
+    setSaving(false);
   }
 
   if (!isFirebaseConfigured) {
     return <main className="flex flex-1 items-center justify-center p-6 text-center text-cream/70">Firebase is not configured. Copy .env.local.example to .env.local and fill in your project keys.</main>;
   }
-  if (!user || !loaded) return <main className="flex flex-1 items-center justify-center text-cream/50">Loading…</main>;
+  if (!user || !saved)
+    return (
+      <main className="flex flex-1 items-center justify-center p-6 text-center text-cream/50">
+        {error ? <p role="alert" className="text-rose">Could not load settings: {error}</p> : "Loading…"}
+      </main>
+    );
 
   const yt = youtubeId(s.song);
 
@@ -88,17 +92,11 @@ export default function SettingsPage() {
           ← RSVPs
         </Link>
       </header>
-      <p className="mt-2 text-sm text-cream/50">Everything guests read and see. The layout and 3D scene stay as designed.</p>
-      <nav aria-label="Sections" className="mt-5 flex flex-wrap gap-2">
-        {SECTIONS.map(([id, name]) => (
-          <a key={id} href={`#${id}`} className="rounded-full border border-cream/15 px-3 py-1.5 text-xs text-cream/70 transition-colors hover:border-gold hover:text-gold">
-            {name}
-          </a>
-        ))}
-      </nav>
+      <p className="mt-2 text-sm text-cream/50">Open a section, make your changes, then press Save. The layout and 3D scene stay as designed.</p>
 
-      <form onSubmit={save} className="mt-8 space-y-8">
-        <Section id="couple" title="Couple & date" hint="Shown on the envelope, the welcome screen and the countdown.">
+      {/* A bad link in a closed section would block Save with no visible message, so open the section it is in. */}
+      <form onSubmit={save} onInvalidCapture={(e) => (e.target as HTMLElement).closest("details")?.setAttribute("open", "")} className="mt-6 space-y-3">
+        <Section id="couple" open title="Couple & date" hint="Shown on the envelope, the welcome screen and the countdown.">
           <div className="grid gap-5 sm:grid-cols-2">
             <Text name="First name" value={s.couple.a} set={at(k("couple"), "a")} max={40} />
             <Text name="Second name" value={s.couple.b} set={at(k("couple"), "b")} max={40} />
@@ -209,26 +207,54 @@ export default function SettingsPage() {
           </div>
         </Section>
 
-        <Section id="theme" title="Theme colours" hint="Accent, highlight and background of the public site (text, buttons, countdown, the 3D rings and sparkles).">
-          <div className="grid gap-5 sm:grid-cols-3">
-            <ColorField name="Accent (gold)" value={s.theme.gold} set={at(k("theme"), "gold")} />
-            <ColorField name="Highlight (rose)" value={s.theme.rose} set={at(k("theme"), "rose")} />
+        <Section id="theme" title="Theme colours" hint="Pick a look, or fine-tune each colour. It recolours the whole public site, including the 3D sky, rings and sparkles.">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {THEMES.map(({ name, colors: c }) => {
+              const on = (Object.keys(c) as (keyof typeof c)[]).every((key) => c[key] === s.theme[key]);
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => k("theme")(() => c)}
+                  style={{ background: c.ink, color: c.cream }}
+                  className={`cursor-pointer rounded-xl border p-3 text-left transition-colors focus-visible:outline focus-visible:outline-gold ${on ? "border-gold ring-1 ring-gold" : "border-cream/15 hover:border-cream/40"}`}
+                >
+                  <span className="flex gap-1.5" aria-hidden>
+                    {[c.gold, c.rose, c.cream].map((hex) => (
+                      <span key={hex} className="size-4 rounded-full border border-black/10" style={{ background: hex }} />
+                    ))}
+                  </span>
+                  <span className="mt-2 block font-serif text-lg leading-tight">{name}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2">
             <ColorField name="Background" value={s.theme.ink} set={at(k("theme"), "ink")} />
+            <ColorField name="Text" value={s.theme.cream} set={at(k("theme"), "cream")} />
+            <ColorField name="Accent (headings, buttons, rings)" value={s.theme.gold} set={at(k("theme"), "gold")} />
+            <ColorField name="Highlight (sparkles, notes)" value={s.theme.rose} set={at(k("theme"), "rose")} />
           </div>
-          <div className="flex flex-wrap items-center gap-4 rounded-xl p-5" style={{ background: s.theme.ink }}>
-            <span className="font-serif text-3xl italic" style={{ color: s.theme.gold }}>
+          <div className="rounded-xl p-5" style={{ background: s.theme.ink, color: s.theme.cream }}>
+            <p className="text-xs uppercase tracking-[0.4em]" style={{ color: s.theme.gold }}>
               Preview
-            </span>
-            <span className="rounded-full px-4 py-1.5 text-xs uppercase tracking-[0.3em]" style={{ background: s.theme.gold, color: s.theme.ink }}>
-              Button
-            </span>
-            <span className="text-sm" style={{ color: s.theme.rose }}>
-              highlight
+            </p>
+            <p className="mt-2 font-serif text-3xl">
+              {s.couple.a} &amp; {s.couple.b}
+            </p>
+            <p className="mt-1 text-sm opacity-75">
+              Guests read text like this. <span style={{ color: s.theme.rose }}>Highlights look like this.</span>
+            </p>
+            <span className="mt-4 inline-block rounded-full px-4 py-1.5 text-xs uppercase tracking-[0.3em]" style={{ background: s.theme.gold, color: s.theme.ink }}>
+              RSVP
             </span>
           </div>
-          <button type="button" onClick={() => k("theme")(() => defaultSettings.theme)} className="cursor-pointer text-sm text-cream/50 transition-colors hover:text-cream">
-            Reset colours
-          </button>
+          {(contrast(s.theme.cream, s.theme.ink) < 4.5 || contrast(s.theme.gold, s.theme.ink) < 3) && (
+            <p role="status" className="text-sm text-rose">
+              Hard to read: {contrast(s.theme.cream, s.theme.ink) < 4.5 ? "the text" : "the accent"} is too close to the background. Pick a lighter or darker colour.
+            </p>
+          )}
         </Section>
 
         <Section id="dress" title="Dress code">
@@ -278,10 +304,11 @@ export default function SettingsPage() {
         </Section>
 
         <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-4 border-t border-cream/10 bg-ink/90 px-4 py-4 backdrop-blur sm:-mx-6 sm:px-6">
-          <button disabled={status === "saving"} className="cursor-pointer rounded-full bg-gold px-8 py-3 text-sm uppercase tracking-[0.3em] text-ink transition hover:brightness-110 disabled:opacity-60">
-            {status === "saving" ? "Saving…" : "Save"}
+          <button disabled={saving || !dirty} className="cursor-pointer rounded-full bg-gold px-8 py-3 text-sm uppercase tracking-[0.3em] text-ink transition hover:brightness-110 disabled:cursor-default disabled:opacity-60">
+            {saving ? "Saving…" : "Save"}
           </button>
-          {status === "saved" && <span className="text-sm text-emerald-300">Saved. The public site updates instantly.</span>}
+          {justSaved && !dirty && <span className="text-sm text-emerald-300">Saved. The public site updates instantly.</span>}
+          {dirty && !saving && <span className="text-sm text-cream/50">Unsaved changes</span>}
           {error && <p role="alert" className="text-sm text-rose">{error}</p>}
         </div>
       </form>

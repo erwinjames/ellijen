@@ -45,7 +45,7 @@ export default function Invitation() {
   useEffect(() => {
     themeRef.current = theme;
     applyTheme(theme);
-    handleRef.current?.setTheme(theme.gold, theme.rose);
+    handleRef.current?.setTheme(theme);
   }, [theme]);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export default function Invitation() {
           },
           onOpened: () => setOpened(true),
         });
-        handleRef.current.setTheme(themeRef.current.gold, themeRef.current.rose);
+        handleRef.current.setTheme(themeRef.current);
         // Whichever [data-chapter] section straddles the viewport centre drives the 3D scene.
         triggers = Array.from(document.querySelectorAll<HTMLElement>("[data-chapter]")).map((el) =>
           ScrollTrigger.create({

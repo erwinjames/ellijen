@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { lighten, normalize, youtubeId, type Settings } from "./settings-utils.ts";
+import { contrast, lighten, normalize, THEMES, youtubeId, type Settings } from "./settings-utils.ts";
 
 const d: Settings = {
-  theme: { gold: "#e8c069", rose: "#f58fb0", ink: "#0a0612" },
+  theme: { gold: "#e8c069", rose: "#f58fb0", ink: "#0a0612", cream: "#f5ead9" },
   dressCode: { title: "Formal", note: "Suits and gowns.", palette: [{ name: "Gold", hex: "#e8c069" }] },
   song: "",
   couple: { a: "A", b: "B" },
@@ -80,4 +80,17 @@ test("youtubeId reads links and embed codes", () => {
 test("lighten moves toward white", () => {
   assert.equal(lighten("#000000", 0.5), "#808080");
   assert.equal(lighten("#ffffff", 0.3), "#ffffff");
+});
+
+test("every preset theme is readable: text 4.5:1, accent 3:1 on the background", () => {
+  assert.equal(contrast("#000000", "#ffffff").toFixed(0), "21");
+  for (const { name, colors: c } of THEMES) {
+    assert.ok(contrast(c.cream, c.ink) >= 4.5, `${name} text`);
+    assert.ok(contrast(c.gold, c.ink) >= 3, `${name} accent`);
+    assert.ok(contrast(c.ink, c.gold) >= 3, `${name} button label`);
+  }
+});
+
+test("old documents without a text colour get the default", () => {
+  assert.equal(normalize({ theme: { gold: "#111111", rose: "#222222", ink: "#333333" } }, d).theme.cream, d.theme.cream);
 });

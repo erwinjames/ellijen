@@ -18,8 +18,8 @@ export type SceneHandle = {
   setChapter(name: string): void;
   /** Play the envelope-opening sequence. No-op after the first call. */
   open(): void;
-  /** Recolour the gold (rings, sparkles, warm accent) and rose (fill light, sparkles) from admin settings. */
-  setTheme(gold: string, rose: string): void;
+  /** Recolour from admin settings: gold (rings, sparkles, warm accent), rose (fill light, sparkles), ink (sky, fog, floor). */
+  setTheme(theme: { gold: string; rose: string; ink: string }): void;
   /** Reprint the envelope's letter card and seal (names, date, venue, logo) from admin settings. */
   setCard(card: Card): void;
   dispose(): void;
@@ -426,9 +426,17 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
 
   return {
     setChapter: (name) => void (chapter = CHAPTERS[name] ?? chapter),
-    setTheme(goldHex, roseHex) {
-      const g = new THREE.Color(goldHex);
-      const r = new THREE.Color(roseHex);
+    setTheme({ gold, rose, ink }) {
+      const g = new THREE.Color(gold);
+      const r = new THREE.Color(rose);
+      const bg = new THREE.Color(ink);
+      renderer.setClearColor(bg);
+      (scene.fog as THREE.FogExp2).color.copy(bg);
+      floorMat.color.copy(bg);
+      backdropMat.uniforms.uBottom.value.copy(bg).multiplyScalar(0.5);
+      backdropMat.uniforms.uTop.value.copy(bg).lerp(new THREE.Color(0x5a3d7a), 0.15); // the default dusk-purple sky
+      // ponytail: a light sky would bloom white, so lift the threshold by its brightness; tune per theme if it looks off.
+      bloom.threshold = 0.9 + 0.2126 * bg.r + 0.7152 * bg.g + 0.0722 * bg.b;
       for (const m of ringMats) m.color.copy(g);
       pMat.uniforms.uColorA.value.copy(g).lerp(new THREE.Color(0xffffff), 0.25);
       pMat.uniforms.uColorB.value.copy(r);

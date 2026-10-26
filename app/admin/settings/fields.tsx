@@ -4,8 +4,9 @@ import { useId, useState } from "react";
 
 // Editors take updater functions (not values) so an upload that finishes later cannot overwrite edits made meanwhile.
 export type Upd<T> = (f: (v: T) => T) => void;
-export const at = <T, K extends keyof T>(set: Upd<T>, k: K): NoInfer<Upd<T[K]>> => (f) => set((v) => ({ ...v, [k]: f(v[k]) }));
-const nth = <T,>(set: Upd<T[]>, i: number): Upd<T> => (f) => set((a) => a.map((x, j) => (j === i ? f(x) : x)));
+// Arrays must stay arrays: spreading one into `{}` turns it into an object and every `.map` after that throws.
+export const at = <T, K extends keyof T>(set: Upd<T>, k: K): NoInfer<Upd<T[K]>> => (f) =>
+  set((v) => (Array.isArray(v) ? (v.map((x, j) => (j === k ? f(x) : x)) as T) : { ...v, [k]: f(v[k]) }));
 
 export const field = "w-full rounded-xl border border-cream/15 bg-ink px-4 py-3 outline-none transition-colors focus:border-gold";
 export const label = "block text-xs uppercase tracking-[0.3em] text-cream/60";
@@ -81,7 +82,7 @@ export function List<T>({ items, set, blank, noun, max = 60, children }: { items
       <ul className="space-y-4">
         {items.map((it, i) => (
           <li key={i} className="flex flex-col-reverse gap-2 rounded-xl border border-cream/10 bg-ink/40 p-3 sm:flex-row sm:p-4">
-            <div className="min-w-0 flex-1 space-y-4">{children(it, nth(set, i), i)}</div>
+            <div className="min-w-0 flex-1 space-y-4">{children(it, at(set, i), i)}</div>
             <div className="-mt-1 flex justify-end sm:mt-0 sm:flex-col sm:justify-start">
               <button type="button" className={iconBtn} disabled={i === 0} onClick={() => move(i, -1)} aria-label={`Move ${noun} up`}>↑</button>
               <button type="button" className={iconBtn} disabled={i === items.length - 1} onClick={() => move(i, 1)} aria-label={`Move ${noun} down`}>↓</button>
@@ -111,12 +112,27 @@ export function ColorField({ value, set, name }: { value: string; set: Upd<strin
   );
 }
 
-export function Section({ id, title, hint, children }: { id: string; title: string; hint?: string; children: React.ReactNode }) {
+/** One collapsible group; sharing `name` makes the browser keep only one open at a time. */
+export function Section({ id, title, hint, open, children }: { id: string; title: string; hint?: string; open?: boolean; children: React.ReactNode }) {
   return (
-    <section id={id} className="scroll-mt-6 rounded-2xl border border-cream/10 bg-ink-2 p-4 sm:p-6">
-      <h2 className="font-serif text-2xl">{title}</h2>
-      {hint && <p className="mt-1 text-sm text-cream/50">{hint}</p>}
-      <div className="mt-6 space-y-5">{children}</div>
-    </section>
+    <details
+      id={id}
+      name="settings"
+      open={open}
+      // The section closing above can push this one off screen; bring its header back.
+      onToggle={(e) => e.currentTarget.open && e.currentTarget.scrollIntoView({ block: "nearest" })}
+      className="group scroll-mt-6 rounded-2xl border border-cream/10 bg-ink-2 transition-colors open:border-gold/30"
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl p-4 transition-colors hover:bg-cream/[0.03] focus-visible:outline focus-visible:outline-gold sm:px-6 sm:py-5 [&::-webkit-details-marker]:hidden">
+        <span className="min-w-0">
+          <span className="block font-serif text-2xl">{title}</span>
+          {hint && <span className="mt-1 hidden text-sm text-cream/50 group-open:block">{hint}</span>}
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-5 shrink-0 text-cream/50 transition-transform duration-200 group-open:rotate-180" aria-hidden>
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </summary>
+      <div className="space-y-5 px-4 pb-5 pt-1 sm:px-6 sm:pb-6">{children}</div>
+    </details>
   );
 }

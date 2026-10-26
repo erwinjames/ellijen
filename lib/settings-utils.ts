@@ -2,7 +2,8 @@
 export type Person = { name: string; note: string; image: string };
 
 export type Settings = {
-  theme: { gold: string; rose: string; ink: string };
+  /** gold = accent, rose = highlight, ink = background, cream = text. */
+  theme: { gold: string; rose: string; ink: string; cream: string };
   dressCode: { title: string; note: string; palette: { name: string; hex: string }[] };
   /** Theme music: an mp3 link (https:// or a path under public/) or a YouTube embed link. Empty = built-in music-box tune. */
   song: string;
@@ -69,6 +70,28 @@ export function normalize(raw: unknown, d: Settings): Settings {
 /** Video id from a YouTube watch/share/embed/shorts link or a pasted <iframe> embed code; "" if none. */
 export function youtubeId(v: string) {
   return v.match(/(?:youtube(?:-nocookie)?\.com\/(?:embed\/|shorts\/|live\/|watch\?(?:.*&)?v=)|youtu\.be\/)([\w-]{11})/)?.[1] ?? "";
+}
+
+// One-click looks for admin → Settings. The first is the site's original design and the default.
+export const THEMES: { name: string; colors: Settings["theme"] }[] = [
+  { name: "Midnight gold", colors: { gold: "#e8c069", rose: "#f58fb0", ink: "#0a0612", cream: "#f5ead9" } },
+  { name: "Wine & blush", colors: { gold: "#eba9a5", rose: "#f7d0b8", ink: "#1a0910", cream: "#fbeee8" } },
+  { name: "Sage garden", colors: { gold: "#b5cc9a", rose: "#e8c49a", ink: "#0c1410", cream: "#eef2e6" } },
+  { name: "Navy & silver", colors: { gold: "#c8d2e2", rose: "#9fbaea", ink: "#070b18", cream: "#eef1f7" } },
+  { name: "Terracotta", colors: { gold: "#e3955f", rose: "#f2c48d", ink: "#150a06", cream: "#f7e9dc" } },
+  { name: "Ivory daylight", colors: { gold: "#8a6320", rose: "#9e3f5c", ink: "#f7f1e6", cream: "#2b2118" } },
+];
+
+const luminance = (h: string) =>
+  [0, 1, 2]
+    .map((i) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16) / 255)
+    .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
+    .reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+
+/** WCAG contrast ratio of two #rrggbb colours (1 to 21; body text wants 4.5+). */
+export function contrast(a: string, b: string) {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
 }
 
 export function lighten(h: string, amt: number) {

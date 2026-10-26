@@ -4,13 +4,13 @@ import { getDownloadURL, ref as fileRef, uploadBytes } from "firebase/storage";
 import { db, isFirebaseConfigured, storage } from "./firebase";
 import { wedding } from "./wedding";
 
-import { lighten, normalize as normalizeWith, type Settings } from "./settings-utils";
+import { lighten, normalize as normalizeWith, THEMES, type Settings } from "./settings-utils";
 
 export type { Person, Settings } from "./settings-utils";
 
 // Couple-editable site settings (admin → Settings). Stored at settings/site; defaults come from wedding.ts.
 export const defaultSettings: Settings = {
-  theme: { gold: "#e8c069", rose: "#f58fb0", ink: "#0a0612" },
+  theme: THEMES[0].colors,
   dressCode: {
     title: wedding.dressCode.title,
     note: wedding.dressCode.note,
@@ -58,6 +58,7 @@ export function applyTheme(theme: Settings["theme"]) {
   root.setProperty("--color-gold", theme.gold);
   root.setProperty("--color-rose", theme.rose);
   root.setProperty("--color-ink", theme.ink);
+  root.setProperty("--color-cream", theme.cream);
   root.setProperty("--color-ink-2", lighten(theme.ink, 0.06));
 }
 

@@ -55,12 +55,12 @@ export default function Hero({ opening, opened, onOpen }: { opening: boolean; op
       ) : (
         <>
           <p className="hero-eyebrow mb-6 text-xs uppercase tracking-[0.5em] text-gold/80">Together with their families</p>
-          <h1 className="font-serif text-6xl font-light leading-none text-cream [text-shadow:0_2px_30px_rgba(0,0,0,0.8)] sm:text-8xl md:text-9xl" style={{ perspective: 600 }}>
+          <h1 className="font-serif text-6xl font-light leading-none text-cream [text-shadow:0_2px_30px_var(--color-ink)] sm:text-8xl md:text-9xl" style={{ perspective: 600 }}>
             {chars(couple.a)}
             <span className="hero-amp mx-3 inline-block italic text-gold sm:mx-6">&amp;</span>
             {chars(couple.b)}
           </h1>
-          <p className="hero-date mt-8 font-serif text-xl italic text-cream/80 [text-shadow:0_2px_20px_rgba(0,0,0,0.8)] sm:text-2xl">{dateLabel}</p>
+          <p className="hero-date mt-8 font-serif text-xl italic text-cream/80 [text-shadow:0_2px_20px_var(--color-ink)] sm:text-2xl">{dateLabel}</p>
           <a href="#rsvp" className="hero-date mt-10 rounded-full border border-gold/60 px-8 py-3 text-sm uppercase tracking-[0.3em] text-gold transition hover:bg-gold hover:text-ink">
             RSVP
           </a>

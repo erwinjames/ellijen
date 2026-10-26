@@ -83,7 +83,7 @@ export default function Home() {
                   />
                 </div>
                 <div
-                  className={`relative [text-shadow:0_2px_24px_rgba(0,0,0,0.9)] ${i % 2 ? "sm:order-1 sm:text-right" : ""}`}
+                  className={`relative [text-shadow:0_2px_24px_var(--color-ink)] ${i % 2 ? "sm:order-1 sm:text-right" : ""}`}
                 >
                   <p
                     data-reveal="pop"
