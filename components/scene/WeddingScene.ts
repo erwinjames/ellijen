@@ -42,6 +42,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const mobile = window.matchMedia("(pointer: coarse)").matches;
   const disposables: { dispose(): void }[] = [];
+  const SKY = new THREE.Color(0x1b1033).sub(new THREE.Color(0x0a0612));
   let phase: Phase = "intro";
 
   // --- renderer / scene / camera ---------------------------------------------------
@@ -233,13 +234,14 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
   composer.addPass(new RenderPass(scene, camera));
   const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.45, 0.6, 0.9);
   composer.addPass(bloom);
-  composer.addPass(new OutputPass());
+  const output = new OutputPass();
+  composer.addPass(output);
   const grade = new ShaderPass(GradeShader);
   if (reduced) grade.uniforms.uAberration.value = 0;
   composer.addPass(grade);
   const fxaa = new ShaderPass(FXAAShader);
   composer.addPass(fxaa);
-  disposables.push(composer);
+  disposables.push(composer, bloom, output, grade, fxaa);
 
   // --- story chapters (driven by which page section is on screen) --------------------------------
   // lookX steers the rings to the side: positive parks them left of frame (behind a left-hand photo).
@@ -304,11 +306,11 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
   const mouse = new THREE.Vector2(0, 0);
   const parallax = new THREE.Vector2(0, 0);
   let hovered = false;
-  let moved = false; // no hover raycast until a real pointer exists (touch-only devices never move one)
+  let moved = false; // no hover raycast until a mouse moves (touch fires pointermove on scroll/drag)
   let spinning = false;
 
   const onMove = (e: PointerEvent) => {
-    moved = true;
+    if (e.pointerType === "mouse") moved = true;
     mouse.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
   };
   const onClick = (e: MouseEvent) => {
@@ -440,9 +442,9 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
       (scene.fog as THREE.FogExp2).color.copy(bg);
       floorMat.color.copy(bg);
       backdropMat.uniforms.uBottom.value.copy(bg).multiplyScalar(0.5);
-      backdropMat.uniforms.uTop.value.copy(bg).lerp(new THREE.Color(0x5a3d7a), 0.15); // the default dusk-purple sky
-      // ponytail: a light sky would bloom white, so lift the threshold by its brightness; tune per theme if it looks off.
+      backdropMat.uniforms.uTop.value.copy(bg).add(SKY); // default ink gives the original #1b1033 sky
       grade.uniforms.uVignette.value = 0.75 * (1 - (0.2126 * bg.r + 0.7152 * bg.g + 0.0722 * bg.b)); // light themes: no black corners
+      // ponytail: a light sky would bloom white, so lift the threshold by its brightness; tune per theme if it looks off.
       bloom.threshold = 0.9 + 0.2126 * bg.r + 0.7152 * bg.g + 0.0722 * bg.b;
       for (const m of ringMats) m.color.copy(g);
       pMat.uniforms.uColorA.value.copy(g).lerp(new THREE.Color(0xffffff), 0.25);

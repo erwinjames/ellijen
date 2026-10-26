@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
-import { useSettings } from "@/lib/settings";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useSettings } from "@/lib/settings";
 
 // Scroll-triggered entrance. Children opt in with data-reveal="up|left|right|flip|pop" (default up).
 const FROM: Record<string, gsap.TweenVars> = {

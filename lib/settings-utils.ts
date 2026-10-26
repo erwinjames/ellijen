@@ -37,21 +37,21 @@ const safeLink = (v: string) =>
   (/^data:image\/(png|jpeg|webp);base64,[\w+/=]+$/.test(v) && v.length <= 300_000));
 
 // Coerces raw Firestore data into the shape of `d`, field by field, falling back to `d` wherever it does not fit.
-// Array items are checked against the default's first item. ponytail: one generic length cap per string/array.
-export function conform<T>(raw: unknown, d: T, key = ""): T {
+// Array items are checked against the default's first item; a bad link there becomes "", not another item's link. ponytail: one generic length cap per string/array.
+export function conform<T>(raw: unknown, d: T, key = "", inArr = false): T {
   if (typeof d === "string") {
     if (typeof raw !== "string") return d;
     if (HEX.test(d)) return (HEX.test(raw) ? raw.toLowerCase() : d) as T;
-    if (LINKISH.test(key)) return (safeLink(raw) ? raw : d) as T;
+    if (LINKISH.test(key)) return (safeLink(raw) ? raw : inArr ? "" : d) as T;
     return raw.slice(0, 4000) as T;
   }
   if (Array.isArray(d)) {
     if (!Array.isArray(raw) || !d.length) return d;
-    return raw.slice(0, 60).map((x) => conform(x, d[0], key)) as T;
+    return raw.slice(0, 60).map((x) => conform(x, d[0], key, true)) as T;
   }
   if (d && typeof d === "object") {
     const r = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
-    return Object.fromEntries(Object.entries(d).map(([k, v]) => [k, conform(r[k], v, k)])) as T;
+    return Object.fromEntries(Object.entries(d).map(([k, v]) => [k, conform(r[k], v, k, inArr)])) as T;
   }
   return d;
 }

@@ -38,8 +38,9 @@ test("normalize accepts https or local links, and empty for the music box", () =
   assert.equal(normalize({ song: "" }, { ...d, song: "/a.mp3" }).song, "");
   assert.equal(normalize({ song: "javascript:alert(1)" }, d).song, d.song);
   const s = normalize({ gallery: ["https://cdn/x.jpg", "javascript:alert(1)", "//evil/x.jpg"], venue: { mapsUrl: "data:text/html,x" } }, d);
-  assert.deepEqual(s.gallery, ["https://cdn/x.jpg", "/gallery/1.jpg", "/gallery/1.jpg"]);
+  assert.deepEqual(s.gallery, ["https://cdn/x.jpg", "", ""]);
   assert.equal(s.venue.mapsUrl, d.venue.mapsUrl);
+  assert.equal(normalize({ travel: { stays: [{ url: "javascript:x" }] } }, d).travel.stays[0].url, "");
   assert.equal(normalize({ sealLogo: "data:image/png;base64,iVBORw0KGgo=" }, d).sealLogo, "data:image/png;base64,iVBORw0KGgo=");
   assert.equal(normalize({ sealLogo: "data:image/svg+xml;base64,PHN2Zz4=" }, d).sealLogo, "");
 });

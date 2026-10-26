@@ -120,7 +120,10 @@ export function Section({ id, title, hint, open, children }: { id: string; title
       name="settings"
       open={open}
       // The section closing above can push this one off screen; bring its header back.
-      onToggle={(e) => e.currentTarget.open && e.currentTarget.scrollIntoView({ block: "nearest" })}
+      onToggle={(e) => {
+        const el = e.currentTarget;
+        if (el.open && el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: "start" });
+      }}
       className="group scroll-mt-6 rounded-2xl border border-cream/10 bg-ink-2 transition-colors open:border-gold/30"
     >
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl p-4 transition-colors hover:bg-cream/[0.03] focus-visible:outline focus-visible:outline-gold sm:px-6 sm:py-5 [&::-webkit-details-marker]:hidden">

@@ -9,7 +9,7 @@ service cloud.firestore {
         && request.resource.data.email is string && request.resource.data.email.size() <= 200
         && request.resource.data.attending is bool
         && request.resource.data.guests is int
-        && request.resource.data.guests >= 0 && request.resource.data.guests <= 5
+        && request.resource.data.guests >= 0 && request.resource.data.guests <= 5 // keep in sync with maxGuestsPerRsvp in lib/wedding.ts
         && (request.resource.data.attending || request.resource.data.guests == 0)
         && request.resource.data.message is string && request.resource.data.message.size() <= 1000
         && request.resource.data.createdAt == request.time;

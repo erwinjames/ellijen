@@ -112,11 +112,11 @@ export default function Invitation() {
   // Scroll stays locked until the envelope has been opened.
   useEffect(() => {
     document.documentElement.style.overflow = opened ? "" : "hidden";
-    document.querySelector("main")?.toggleAttribute("inert", !opened);
+    document.getElementById("content")?.toggleAttribute("inert", !opened);
     if (opened) ScrollTrigger.refresh();
     return () => {
       document.documentElement.style.overflow = "";
-      document.querySelector("main")?.removeAttribute("inert");
+      document.getElementById("content")?.removeAttribute("inert");
     };
   }, [opened]);
 

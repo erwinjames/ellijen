@@ -41,7 +41,11 @@ export default function RsvpForm() {
     } catch (err) {
       console.error(err);
       setStatus("error");
-      setError("Something went wrong sending your RSVP. Please try again.");
+      setError(
+        err instanceof Error && err.message === "RSVP timed out"
+          ? "Your connection is slow — your reply will send automatically once you're back online. No need to send it again."
+          : "Something went wrong sending your RSVP. Please try again.",
+      );
     }
   }
 

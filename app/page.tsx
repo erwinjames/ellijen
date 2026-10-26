@@ -46,7 +46,7 @@ export default function Home() {
       <Invitation />
 
       {/* body is a flex column: without a block wrapper, mx-auto sections shrink-wrap to their content */}
-      <main className="w-full overflow-x-clip">
+      <main id="content" className="w-full overflow-x-clip">
         {/* ---- Our story: one chapter per scroll, photo on alternating sides ---- */}
         <section
           id="story"
