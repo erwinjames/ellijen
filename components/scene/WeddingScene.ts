@@ -11,6 +11,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { GradeShader, backdropFragment, backdropVertex, particleFragment, particleVertex } from "./shaders";
 import { noiseTexture, petalTexture, sparkleTexture } from "./textures";
 import { buildEnvelope, type Card } from "./envelope";
+import { buildDancers } from "./dancers";
 import { wedding } from "@/lib/wedding";
 
 export type SceneHandle = {
@@ -173,6 +174,13 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
     opts.onReady?.();
   }
 
+  // --- dancing couple behind the rings, shown only in the RSVP chapter ---------------------------
+  const couple = buildDancers(reduced);
+  couple.group.position.set(0, -1.3, -2.6);
+  scene.add(couple.group);
+  disposables.push(couple);
+  let dance = 0;
+
   // --- particles (custom shader) ---------------------------------------------------------
   const count = reduced ? 300 : mobile ? 700 : 1500;
   const pos = new Float32Array(count * 3);
@@ -259,7 +267,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
     gallery: { x: 0, y: 5, z: 2.5, lookX: 0, lookY: 0.2, spread: 0, flat: 1, rise: 0, bloom: 0.25, warm: 0.2 },
     faq: { x: -2, y: 2.2, z: 9, lookX: -2, lookY: 1.2, spread: 2.4, flat: 0, rise: 1, bloom: 0.3, warm: 0.5 },
     travel: { x: 0, y: 2.6, z: 8, lookX: 0, lookY: 2.6, spread: 0, flat: 0, rise: 0, bloom: 0.35, warm: 0.6 },
-    rsvp: { x: 0, y: 2.2, z: 6, lookX: 0, lookY: 2.4, spread: 0, flat: 0, rise: 0, bloom: 0.5, warm: 1 },
+    rsvp: { x: 0, y: 0.8, z: 7.5, lookX: 0, lookY: -0.8, spread: 1.2, flat: 0, rise: 0, bloom: 0.5, warm: 1 }, // rings part, couple dances between them in the top half
   };
   const story: ChapterState = { ...CHAPTERS.hero };
   let chapter: ChapterState = CHAPTERS.hero;
@@ -392,6 +400,9 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
       env.group.rotation.x = -parallax.y * 0.2;
     }
 
+    dance = THREE.MathUtils.damp(dance, phase === "story" && chapter === CHAPTERS.rsvp ? 1 : 0, 3, dt);
+    couple.update(t, dance);
+
     // rings idle + story spread/flatten
     if (!spinning) rings.rotation.y += dt * 0.25;
     rings.position.y = 0.2 + Math.sin(t * 0.8) * 0.08;
@@ -447,6 +458,7 @@ export function createWeddingScene(canvas: HTMLCanvasElement, opts: Opts): Scene
       // ponytail: a light sky would bloom white, so lift the threshold by its brightness; tune per theme if it looks off.
       bloom.threshold = 0.9 + 0.2126 * bg.r + 0.7152 * bg.g + 0.0722 * bg.b;
       for (const m of ringMats) m.color.copy(g);
+      couple.setAccent(g);
       pMat.uniforms.uColorA.value.copy(g).lerp(new THREE.Color(0xffffff), 0.25);
       pMat.uniforms.uColorB.value.copy(r);
       fill.color.copy(r);
